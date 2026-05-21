@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0c14;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1a1c2c;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#818cf8;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#22d3ee;stop-opacity:0.3"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <!-- Grid pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(148,163,184,0.05)" stroke-width="1"/>
+  </pattern>
+  <rect width="1280" height="720" fill="url(#grid)"/>
+  <!-- Gradient orbs -->
+  <circle cx="300" cy="200" r="200" fill="url(#accent)" opacity="0.3"/>
+  <circle cx="900" cy="500" r="180" fill="url(#accent)" opacity="0.2"/>
+  <!-- Center content -->
+  <g transform="translate(640,360)">
+    <circle r="40" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+    <path d="M-12,-18l24,12-24,12z" fill="white"/>
+  </g>
+  <!-- Text -->
+  <text x="640" y="440" text-anchor="middle" font-family="DM Sans, system-ui" font-size="18" fill="rgba(255,255,255,0.5)" font-weight="500">AI Scholar Demo</text>
+  <text x="640" y="465" text-anchor="middle" font-family="DM Sans, system-ui" font-size="14" fill="rgba(255,255,255,0.3)">Click to play</text>
+</svg>

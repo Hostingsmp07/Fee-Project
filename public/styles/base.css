@@ -1,0 +1,251 @@
+/* Base styles */
+/* Base reset */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  -moz-text-size-adjust: none;
+}
+
+body {
+  min-height: 100vh;
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+
+/* Global typography helpers */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+  max-width: 75ch;
+}
+
+/* Links */
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Images, media */
+
+img,
+svg,
+canvas,
+video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Root theme tokens (dark default) */
+
+:root {
+  --bg-main: #020617;
+  --bg-elevated: #020617;
+  --text-main: #e5e7eb;
+  --text-muted: #cbd5f5;
+  --text-soft: #9ca3af;
+
+  --accent-primary: #4f46e5;
+  --accent-primary-soft: rgba(129, 140, 248, 0.3);
+  --accent-cyan: #22d3ee;
+
+  --border-subtle: rgba(148, 163, 184, 0.5);
+
+  --shadow-soft: 0 16px 50px rgba(15, 23, 42, 0.9);
+
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-pill: 999px;
+
+  --transition-fast: 150ms ease-out;
+  --transition-med: 220ms ease-out;
+}
+
+/* Theme variants */
+
+body.theme-dark {
+  background: radial-gradient(circle at top left, #020617, #020617);
+  color: var(--text-main);
+}
+
+body.theme-light {
+  --bg-main: #f3f4f6;
+  --bg-elevated: #ffffff;
+  --text-main: #111827;
+  --text-muted: #4b5563;
+  --text-soft: #6b7280;
+  --border-subtle: rgba(209, 213, 219, 0.9);
+  background: radial-gradient(circle at top left, #e5e7eb, #f9fafb);
+  color: var(--text-main);
+}
+
+body.theme-high-contrast {
+  --bg-main: #020617;
+  --bg-elevated: #020617;
+  --text-main: #fefce8;
+  --text-muted: #facc15;
+  --text-soft: #e5e7eb;
+  --accent-primary: #facc15;
+  --accent-primary-soft: rgba(250, 204, 21, 0.3);
+  --border-subtle: rgba(250, 250, 250, 0.9);
+}
+
+/* Utility text classes */
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+/* Buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0.38rem 0.95rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: rgba(15, 23, 42, 0.95);
+  color: var(--text-main);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.95);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+.btn-sm {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-cyan));
+  color: #f9fafb;
+  border-color: rgba(129, 140, 248, 0.7);
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: rgba(148, 163, 184, 0.8);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.95);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.05);
+}
+
+.btn-outline:hover {
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.btn-ghost:hover {
+  background: rgba(15, 23, 42, 0.65);
+}
+
+/* Chips / pills */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.8);
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--text-soft);
+}
+
+.chip-soft {
+  border-color: rgba(148, 163, 184, 0.6);
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.chip-clickable {
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.chip-clickable:hover {
+  background: rgba(15, 23, 42, 0.93);
+  border-color: rgba(148, 163, 184, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.9);
+}
+
+/* Misc containers */
+
+main {
+  color: var(--text-main);
+}
+
+input,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+}
+
+/* Simple scrollbar for app/landing where overflow appears */
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.9);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 1);
+}

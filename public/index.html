@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Scholar – AI Study Planner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AI Scholar — AI-powered study planner with focus timer, smart goal suggestions, and progress analytics. Plan smarter, study longer, achieve more.">
+  <meta name="keywords" content="study planner, AI study, focus timer, pomodoro, study analytics, student productivity">
+  <meta name="author" content="AI Scholar">
+  <meta property="og:title" content="AI Scholar – AI Study Planner">
+  <meta property="og:description" content="Plan smarter, study longer, achieve more. AI-powered focus timer, smart goals, and progress analytics.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://aischolar.app">
+  <meta property="og:image" content="/og-image.png">
+  <meta property="og:site_name" content="AI Scholar">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AI Scholar – AI Study Planner">
+  <meta name="twitter:description" content="Plan smarter, study longer, achieve more. AI-powered focus timer, smart goals, and progress analytics.">
+  <meta name="theme-color" content="#0a0c14">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/landing.css">
+
+  <style>
+    /* ─── THEME VARIABLES ─── */
+    :root {
+      --bg: #0a0c14;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #818cf8;
+      --accent2: #22d3ee;
+      --header-bg: rgba(10,12,20,0.85);
+    }
+    body.theme-light {
+      --bg: #f8fafc;
+      --surface: rgba(0,0,0,0.04);
+      --border: rgba(0,0,0,0.10);
+      --text: #0f172a;
+      --text-muted: #475569;
+      --accent: #6366f1;
+      --accent2: #0891b2;
+      --header-bg: rgba(248,250,252,0.90);
+    }
+    body.theme-light .bg-layer { opacity: 0.25; }
+    body.theme-light .landing-header { background: var(--header-bg); }
+    body.theme-light .feature-card,
+    body.theme-light .step-item,
+    body.theme-light .auth-dialog { background: #fff; color: var(--text); border-color: var(--border); }
+    body.theme-light .proof-strip { background: rgba(0,0,0,0.04); border-color: var(--border); }
+    body.theme-light .nav-link { color: var(--text-muted); }
+    body.theme-light .brand-name { color: var(--text); }
+    body.theme-light .hero-subtitle, body.theme-light .section-subtitle,
+    body.theme-light .proof-label, body.theme-light .footer-copy { color: var(--text-muted); }
+    body.theme-light h1, body.theme-light h2, body.theme-light h3 { color: var(--text); }
+
+    /* ─── LOADING SCREEN ─── */
+    #loader {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #0a0c14;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    #loader.hidden { opacity: 0; visibility: hidden; }
+    .loader-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 700;
+      color: #e2e8f0; letter-spacing: -0.01em;
+    }
+    .loader-bar-wrap {
+      width: 160px; height: 3px;
+      background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden;
+    }
+    .loader-bar {
+      height: 100%; width: 0%; border-radius: 99px;
+      background: linear-gradient(90deg, #818cf8, #22d3ee);
+      animation: loaderFill 1.4s cubic-bezier(.4,0,.2,1) forwards;
+    }
+    @keyframes loaderFill { to { width: 100%; } }
+
+    /* ─── SCROLL PROGRESS BAR ─── */
+    #scroll-progress {
+      position: fixed; top: 0; left: 0; z-index: 1100;
+      height: 3px; width: 0%;
+      background: linear-gradient(90deg, #818cf8, #22d3ee);
+      transition: width 0.05s linear;
+      pointer-events: none;
+    }
+
+    /* ─── STICKY HEADER ─── */
+    .landing-header {
+      position: sticky; top: 0; z-index: 900;
+      background: var(--header-bg);
+      backdrop-filter: blur(18px) saturate(1.5);
+      -webkit-backdrop-filter: blur(18px) saturate(1.5);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s, box-shadow 0.3s, transform 0.35s cubic-bezier(.4,0,.2,1);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 clamp(1rem, 4vw, 2.5rem); height: 62px;
+      gap: 1rem;
+    }
+    .landing-header.scrolled {
+      border-color: var(--border);
+      box-shadow: 0 4px 32px rgba(0,0,0,0.35);
+    }
+    .landing-header.hidden-up { transform: translateY(-100%); }
+
+    /* Mobile nav toggle */
+    .nav-hamburger {
+      display: none; flex-direction: column; justify-content: center;
+      gap: 5px; background: none; border: none; cursor: pointer;
+      padding: 6px; border-radius: 8px;
+    }
+    .nav-hamburger span {
+      display: block; width: 22px; height: 2px;
+      background: var(--text, #e2e8f0);
+      border-radius: 2px; transition: transform 0.3s, opacity 0.3s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ─── CURSOR GLOW ─── */
+    #cursor-glow {
+      position: fixed; pointer-events: none; z-index: 9000;
+      width: 340px; height: 340px;
+      background: radial-gradient(circle, rgba(129,140,248,0.13) 0%, transparent 70%);
+      border-radius: 50%; transform: translate(-50%,-50%);
+      transition: opacity 0.4s; opacity: 0;
+    }
+
+    /* ─── BACK TO TOP ─── */
+    #back-to-top {
+      position: fixed; bottom: 28px; right: 24px; z-index: 800;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, #818cf8, #22d3ee);
+      border: none; cursor: pointer; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; box-shadow: 0 4px 20px rgba(129,140,248,0.45);
+      opacity: 0; transform: translateY(16px) scale(0.85);
+      transition: opacity 0.35s, transform 0.35s cubic-bezier(.4,0,.2,1);
+      pointer-events: none;
+    }
+    #back-to-top.visible { opacity: 1; transform: none; pointer-events: auto; }
+    #back-to-top:hover { transform: scale(1.1) translateY(-2px); }
+
+    /* ─── THEME TOGGLE ─── */
+    #theme-toggle {
+      width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border);
+      background: var(--surface); cursor: pointer; font-size: 17px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, transform 0.2s; flex-shrink: 0;
+    }
+    #theme-toggle:hover { transform: rotate(20deg); }
+
+    /* ─── SIDE PANEL ─── */
+    #side-panel {
+      position: fixed; top: 50%; right: 0; z-index: 700;
+      transform: translateY(-50%) translateX(100%);
+      background: rgba(15,18,30,0.96);
+      border: 1px solid var(--border);
+      border-right: none;
+      border-radius: 14px 0 0 14px;
+      padding: 18px 20px 20px;
+      min-width: 200px; width: 220px;
+      backdrop-filter: blur(18px);
+      transition: transform 0.4s cubic-bezier(.4,0,.2,1);
+      box-shadow: -8px 0 40px rgba(0,0,0,0.4);
+    }
+    #side-panel.open { transform: translateY(-50%) translateX(0); }
+    #side-panel-tab {
+      position: fixed; top: 50%; right: 0; z-index: 701;
+      transform: translateY(-50%);
+      background: linear-gradient(135deg, #818cf8, #22d3ee);
+      border: none; border-radius: 8px 0 0 8px;
+      width: 28px; height: 64px; cursor: pointer; color: #fff;
+      font-size: 13px; writing-mode: vertical-rl;
+      display: flex; align-items: center; justify-content: center;
+      letter-spacing: 0.06em; font-family: 'Syne', sans-serif; font-weight: 600;
+      transition: width 0.2s;
+    }
+    #side-panel-tab:hover { width: 32px; }
+    .side-panel-title {
+      font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--accent); margin-bottom: 12px;
+    }
+    .side-link {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 10px; border-radius: 8px;
+      color: #cbd5e1; font-size: 0.85rem; cursor: pointer;
+      text-decoration: none; transition: background 0.15s, color 0.15s;
+      border: none; background: none; width: 100%; text-align: left;
+    }
+    .side-link:hover { background: rgba(129,140,248,0.12); color: #e2e8f0; }
+
+    /* ─── ANIMATED COUNTERS ─── */
+    .proof-num { display: inline-block; }
+
+    /* ─── HERO PARALLAX ─── */
+    .hero { position: relative; overflow: visible; }
+    .hero-preview { transition: transform 0.12s ease-out; will-change: transform; }
+
+    /* ─── MODAL CARD ─── */
+    .feature-card {
+      cursor: pointer; transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px) scale(1.025);
+      box-shadow: 0 12px 48px rgba(129,140,248,0.18);
+      border-color: rgba(129,140,248,0.3);
+    }
+    #feat-modal {
+      position: fixed; inset: 0; z-index: 5000;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    #feat-modal.open { opacity: 1; visibility: visible; }
+    .feat-modal-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+    }
+    .feat-modal-box {
+      position: relative; z-index: 1;
+      background: #111827; border: 1px solid rgba(129,140,248,0.25);
+      border-radius: 20px; padding: 36px; max-width: 440px; width: 100%;
+      transform: scale(0.92) translateY(16px);
+      transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    }
+    #feat-modal.open .feat-modal-box { transform: none; }
+    .feat-modal-close {
+      position: absolute; top: 14px; right: 16px;
+      background: none; border: none; color: #94a3b8; font-size: 22px;
+      cursor: pointer; line-height: 1; padding: 4px 8px; border-radius: 6px;
+    }
+    .feat-modal-close:hover { color: #e2e8f0; }
+    .feat-modal-icon { font-size: 2rem; margin-bottom: 12px; }
+    .feat-modal-title { font-family: 'Syne', sans-serif; font-size: 1.25rem; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; }
+    .feat-modal-body { color: #94a3b8; font-size: 0.9rem; line-height: 1.7; }
+
+    /* ─── CLICK RIPPLE ─── */
+    .ripple-el { position: relative; overflow: hidden; }
+    @keyframes rippleAnim {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    /* ─── SCROLL-REVEAL ─── */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.55s ease, transform 0.55s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ─── FULL RESPONSIVENESS ─── */
+    @media (max-width: 900px) {
+      .landing-shell { padding: 0; }
+      .hero { flex-direction: column; padding: 60px 20px 40px; gap: 40px; }
+      .hero-text { max-width: 100%; text-align: center; }
+      .hero-actions { justify-content: center; }
+      .hero-badges { justify-content: center; }
+      .hero-preview { width: 100%; max-width: 400px; margin: 0 auto; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .steps-grid { grid-template-columns: 1fr; gap: 0; }
+      .step-arrow { display: none; }
+      .proof-strip { flex-wrap: wrap; gap: 0; }
+      .proof-sep { display: none; }
+      .proof-item { flex: 1 1 33%; min-width: 90px; }
+      .nav { display: none; position: absolute; top: 62px; left: 0; right: 0;
+             background: var(--header-bg); border-bottom: 1px solid var(--border);
+             flex-direction: column; padding: 12px 24px 20px; gap: 4px;
+             backdrop-filter: blur(18px); }
+      .nav.open { display: flex; }
+      .nav-hamburger { display: flex; }
+      .nav-actions { gap: 6px; }
+      .btn-ghost.btn-sm { display: none; }
+      #side-panel, #side-panel-tab { display: none; }
+    }
+    @media (max-width: 600px) {
+      .hero h1 { font-size: clamp(1.9rem, 8vw, 2.8rem); }
+      .features-grid { grid-template-columns: 1fr; }
+      .hero-actions { flex-direction: column; align-items: center; }
+      .btn-hero, .btn-outline-hero { width: 100%; max-width: 300px; text-align: center; justify-content: center; }
+      .auth-dialog { margin: 10px; padding: 24px 18px; }
+      .proof-item { flex: 1 1 50%; }
+      .eyebrow-wrap { justify-content: center; }
+      .landing-header { padding: 0 16px; }
+      .nav-actions .btn-sm { font-size: 0.78rem; padding: 6px 12px; }
+      #back-to-top { bottom: 18px; right: 14px; }
+      .section { padding: 64px 20px; }
+      .pill-row { gap: 8px; }
+      .pill { font-size: 0.82rem; }
+    }
+    @media (max-width: 380px) {
+      .hero h1 { font-size: 1.75rem; }
+      .nav-actions { gap: 4px; }
+    }
+
+    /* ─── DEMO VIDEO ─── */
+    .demo-section { padding: 40px 0 60px; }
+    .demo-video-wrap { max-width: 720px; margin: 0 auto; }
+    .demo-video-card {
+      position: relative; border-radius: 16px; overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border);
+      aspect-ratio: 16/9;
+    }
+    .demo-video-glow {
+      position: absolute; inset: -2px; z-index: 0; border-radius: 18px;
+      background: linear-gradient(135deg, rgba(129,140,248,0.2), rgba(34,211,238,0.2));
+      filter: blur(20px); opacity: 0.5; pointer-events: none;
+    }
+    .demo-video {
+      position: relative; z-index: 1; width: 100%; height: 100%;
+      object-fit: cover; display: block; border-radius: 15px;
+    }
+    .demo-play-overlay {
+      position: absolute; inset: 0; z-index: 2;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; background: rgba(10,12,20,0.5);
+      cursor: pointer; transition: background 0.3s;
+    }
+    .demo-play-overlay:hover { background: rgba(10,12,20,0.35); }
+    .demo-play-overlay.hidden { display: none; }
+    .demo-play-btn {
+      background: none; border: none; cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .demo-play-btn:hover { transform: scale(1.1); }
+    .demo-play-text {
+      font-size: 0.85rem; color: rgba(255,255,255,0.8);
+      font-weight: 500; letter-spacing: 0.02em;
+    }
+
+    /* ─── TESTIMONIALS ─── */
+    .testimonials-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px; max-width: 900px; margin: 0 auto;
+    }
+    .testimonial-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px; position: relative;
+    }
+    .testimonial-card::before {
+      content: '\201C'; position: absolute; top: 12px; left: 18px;
+      font-size: 3rem; color: var(--accent); opacity: 0.25;
+      font-family: Georgia, serif; line-height: 1;
+    }
+    .testimonial-quote { color: var(--text); font-size: 0.92rem; line-height: 1.65; margin-bottom: 16px; }
+    .testimonial-author { display: flex; align-items: center; gap: 10px; }
+    .testimonial-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, #818cf8, #22d3ee);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .testimonial-name { font-weight: 600; font-size: 0.88rem; color: var(--text); }
+    .testimonial-role { font-size: 0.78rem; color: var(--text-muted); }
+
+    /* ─── FAQ ─── */
+    .faq-list { max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+    .faq-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; transition: border-color 0.2s;
+    }
+    .faq-item.open { border-color: rgba(129,140,248,0.3); }
+    .faq-question {
+      width: 100%; background: none; border: none; padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; color: var(--text); font-size: 0.95rem;
+      font-weight: 600; text-align: left; gap: 12px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .faq-question:hover { color: var(--accent); }
+    .faq-chevron {
+      font-size: 1.1rem; transition: transform 0.3s; flex-shrink: 0; color: var(--text-muted);
+    }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+    .faq-answer {
+      max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.35s ease;
+      padding: 0 20px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.65;
+    }
+    .faq-item.open .faq-answer { max-height: 200px; padding: 0 20px 16px; }
+
+    /* ─── TECH STRIP ─── */
+    .tech-strip {
+      display: flex; align-items: center; justify-content: center;
+      gap: 28px; flex-wrap: wrap; padding: 20px 0 0;
+    }
+    .tech-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.82rem; color: var(--text-muted);
+      opacity: 0.7; transition: opacity 0.2s;
+    }
+    .tech-badge:hover { opacity: 1; }
+    .tech-badge svg { width: 16px; height: 16px; }
+
+    /* ─── STICKY MOBILE CTA ─── */
+    #sticky-mobile-cta {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 850;
+      background: rgba(10,12,20,0.95); backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      padding: 12px 20px; display: none;
+      transform: translateY(100%); transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+    }
+    #sticky-mobile-cta.visible { transform: translateY(0); }
+    #sticky-mobile-cta .btn { width: 100%; justify-content: center; }
+    @media (max-width: 900px) { #sticky-mobile-cta { display: block; } }
+    body.theme-light #sticky-mobile-cta { background: rgba(248,250,252,0.95); }
+
+    /* ─── PARTICLE CANVAS ─── */
+    #particle-canvas {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.6;
+    }
+    body.theme-light #particle-canvas { opacity: 0.2; }
+
+    /* ─── GRADIENT TEXT ─── */
+    .hero-typed-wrap { display: inline-block; position: relative; }
+    .hero-typed {
+      background: linear-gradient(135deg, #818cf8, #22d3ee, #a78bfa);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 4s ease infinite;
+    }
+    .typed-cursor {
+      display: inline-block; width: 3px; margin-left: 2px;
+      background: linear-gradient(180deg, #818cf8, #22d3ee);
+      border-radius: 2px; vertical-align: text-bottom;
+      animation: cursorBlink 0.8s step-end infinite;
+    }
+    @keyframes gradientShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+    @keyframes cursorBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ensure steps-grid layout fix desktop */
+    @media (min-width: 901px) {
+      .steps-grid {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+        align-items: center;
+        gap: 0 8px;
+      }
+    }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "AI Scholar",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web",
+    "description": "AI-powered study planner with focus timer, smart goal suggestions, and progress analytics.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Organization", "name": "AI Scholar" }
+  }
+  </script>
+</head>
+<body class="landing-body theme-dark">
+
+  <!-- Particle Background -->
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+  <!-- LOADER -->
+  <div id="loader">
+    <div class="loader-logo">
+      <img src="/logo.svg" alt="AI Scholar" width="28" height="28">
+      AI Scholar
+    </div>
+    <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  </div>
+
+  <!-- SCROLL PROGRESS -->
+  <div id="scroll-progress"></div>
+
+  <!-- CURSOR GLOW -->
+  <div id="cursor-glow"></div>
+
+  <!-- BACK TO TOP -->
+  <button id="back-to-top" aria-label="Back to top">&#8679;</button>
+
+  <!-- SIDE PANEL TAB -->
+  <button id="side-panel-tab" aria-label="Open quick nav">NAV</button>
+
+  <!-- SIDE PANEL -->
+  <div id="side-panel" role="navigation" aria-label="Quick navigation">
+    <div class="side-panel-title">Quick Nav</div>
+    <a href="#top" class="side-link">&#127968; Home</a>
+    <a href="#features" class="side-link">&#10024; Features</a>
+    <a href="#how-it-works" class="side-link">&#128736; How it works</a>
+    <a href="#why" class="side-link">&#128161; Why us</a>
+    <div style="margin-top:14px; border-top:1px solid rgba(255,255,255,0.07); padding-top:12px;">
+      <button class="side-link ripple-el" id="side-login-btn">&#128100; Log in</button>
+      <button class="side-link ripple-el" id="side-start-btn">&#128640; Get started</button>
+    </div>
+  </div>
+
+  <!-- FEATURE MODAL -->
+  <div id="feat-modal" role="dialog" aria-modal="true" aria-labelledby="feat-modal-title">
+    <div class="feat-modal-backdrop" id="feat-modal-backdrop"></div>
+    <div class="feat-modal-box">
+      <button class="feat-modal-close" id="feat-modal-close">&#215;</button>
+      <div class="feat-modal-icon" id="feat-modal-icon"></div>
+      <div class="feat-modal-title" id="feat-modal-title"></div>
+      <div class="feat-modal-body" id="feat-modal-body"></div>
+    </div>
+  </div>
+
+  <div class="bg-layer" aria-hidden="true">
+    <div class="bg-grid"></div>
+  </div>
+
+  <div class="landing-shell">
+    <header class="landing-header" id="top">
+      <div class="brand">
+        <img class="brand-mark" src="/logo.svg" alt="AI Scholar" width="28" height="28">
+        <span class="brand-name">AI Scholar</span>
+      </div>
+
+      <nav class="nav" id="main-nav" aria-label="Primary">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#how-it-works" class="nav-link">How it works</a>
+        <a href="#why" class="nav-link">Why us</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button id="theme-toggle" aria-label="Toggle theme">🌙</button>
+        <button class="btn btn-ghost btn-sm ripple-el" id="btn-open-login">Log in</button>
+        <button class="btn btn-primary btn-sm ripple-el" id="nav-get-started">Get started &rarr;</button>
+        <button class="nav-hamburger" id="nav-hamburger" aria-label="Open menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </header>
+
+    <main class="landing-main">
+
+      <!-- Hero -->
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-text reveal">
+          <div class="eyebrow-wrap">
+            <span class="eyebrow-pulse" aria-hidden="true"></span>
+            <p class="eyebrow">For serious learners &amp; developers</p>
+          </div>
+          <h1 id="hero-title">Turn study time into<br><span class="hero-typed-wrap"><span class="hero-typed" id="hero-typed">focused momentum.</span><span class="typed-cursor" aria-hidden="true"></span></span></h1>
+          <p class="hero-subtitle">AI Scholar plans your sessions, tracks your hours, and surfaces smart AI suggestions — spend less time organizing and more time learning.</p>
+          <div class="hero-actions">
+            <button class="btn btn-hero ripple-el" id="hero-get-started">Start planning free &rarr;</button>
+            <button class="btn btn-outline-hero ripple-el" id="hero-scroll-features">Explore features</button>
+          </div>
+          <div class="hero-badges">
+            <span class="chip chip-soft"><span aria-hidden="true">⏱</span> Focus timer</span>
+            <span class="chip chip-soft"><span aria-hidden="true">✦</span> AI-suggested goals</span>
+            <span class="chip chip-soft"><span aria-hidden="true">📊</span> Progress analytics</span>
+          </div>
+        </div>
+
+        <aside class="hero-preview" id="hero-preview" aria-label="App preview">
+          <div class="preview-card">
+            <div class="preview-glow" aria-hidden="true"></div>
+            <div class="preview-header">
+              <div class="preview-header-left">
+                <span class="live-dot" aria-hidden="true"></span>
+                <span class="preview-label">Today's focus</span>
+              </div>
+              <span class="preview-kpi"><span class="preview-kpi-num">2.5</span> <span class="preview-kpi-unit">h logged</span></span>
+            </div>
+
+            <div class="preview-timer-row">
+              <div class="preview-ring-wrap" aria-hidden="true">
+                <svg width="80" height="80" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="34" stroke="rgba(148,163,184,0.12)" stroke-width="5" fill="none"/>
+                  <circle cx="40" cy="40" r="34" stroke="url(#tg)" stroke-width="5" fill="none"
+                    stroke-dasharray="213.6" stroke-dashoffset="64" stroke-linecap="round" transform="rotate(-90 40 40)"/>
+                  <defs><linearGradient id="tg" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse"><stop stop-color="#818cf8"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+                </svg>
+                <span class="preview-time-val">25:00</span>
+              </div>
+              <div class="preview-timer-info">
+                <p class="preview-session-name">Deep Work Block</p>
+                <p class="preview-caption">One click to start. Sessions auto-save.</p>
+                <div class="preview-timer-btns">
+                  <button class="pbtn pbtn-primary ripple-el" tabindex="-1" aria-hidden="true">&#9654; Start</button>
+                  <button class="pbtn pbtn-ghost ripple-el" tabindex="-1" aria-hidden="true">Skip</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="preview-sep" aria-hidden="true"></div>
+
+            <div class="preview-plans">
+              <div class="pplan pplan-active">
+                <div class="pplan-left">
+                  <span class="pplan-dot dot-hard"></span>
+                  <div><div class="pplan-title">Mastering Machine Learning</div><div class="pplan-meta">8 / 20 h</div></div>
+                </div>
+                <div class="pplan-bar-wrap"><div class="pplan-bar" style="width:40%"></div></div>
+              </div>
+              <div class="pplan">
+                <div class="pplan-left">
+                  <span class="pplan-dot dot-med"></span>
+                  <div><div class="pplan-title">System Design Interview</div><div class="pplan-meta">3.5 / 10 h</div></div>
+                </div>
+                <div class="pplan-bar-wrap"><div class="pplan-bar" style="width:35%"></div></div>
+              </div>
+              <div class="pplan">
+                <div class="pplan-left">
+                  <span class="pplan-dot dot-hard"></span>
+                  <div><div class="pplan-title">Data Structures &amp; Algorithms</div><div class="pplan-meta">12 / 18 h</div></div>
+                </div>
+                <div class="pplan-bar-wrap"><div class="pplan-bar" style="width:67%"></div></div>
+              </div>
+            </div>
+
+            <div class="preview-ai-nudge">
+              <span class="nudge-star" aria-hidden="true">✦</span>
+              <span>AI suggests adding 2h to DSA this week to stay on track.</span>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- Demo Video -->
+      <section class="section demo-section reveal" id="demo" aria-labelledby="demo-title">
+        <header class="section-header">
+          <div class="section-label">Demo</div>
+          <h2 id="demo-title">See AI Scholar in action.</h2>
+          <p class="section-subtitle">Watch how easy it is to create a study plan and start focusing.</p>
+        </header>
+        <div class="demo-video-wrap">
+          <div class="demo-video-card">
+            <div class="demo-video-glow" aria-hidden="true"></div>
+            <canvas id="demo-canvas" class="demo-video" width="1280" height="720"></canvas>
+            <div class="demo-play-overlay" id="demo-play">
+              <button class="demo-play-btn" aria-label="Play demo animation">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                  <circle cx="24" cy="24" r="23" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+                  <path d="M19 15l14 9-14 9V15z" fill="white"/>
+                </svg>
+              </button>
+              <span class="demo-play-text">Watch animated demo</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stats strip -->
+      <div class="proof-strip reveal" role="list" aria-label="Key statistics">
+        <div class="proof-item" role="listitem">
+          <span class="proof-num" data-counter data-target="30" data-suffix="s">0s</span>
+          <span class="proof-label">to first session</span>
+        </div>
+        <div class="proof-sep" aria-hidden="true"></div>
+        <div class="proof-item" role="listitem">
+          <span class="proof-num" data-counter data-target="100" data-suffix="%">0%</span>
+          <span class="proof-label">auto-logged hours</span>
+        </div>
+        <div class="proof-sep" aria-hidden="true"></div>
+        <div class="proof-item" role="listitem">
+          <span class="proof-num">Gemini</span>
+          <span class="proof-label">AI-powered goals</span>
+        </div>
+        <div class="proof-sep" aria-hidden="true"></div>
+        <div class="proof-item" role="listitem">
+          <span class="proof-num" data-counter data-target="2500" data-suffix="+">0+</span>
+          <span class="proof-label">students using AI Scholar</span>
+        </div>
+      </div>
+
+      <!-- Tech strip -->
+      <div class="tech-strip reveal" aria-label="Built with">
+        <span class="tech-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Node.js</span>
+        <span class="tech-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg> Express</span>
+        <span class="tech-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/></svg> SQLite</span>
+        <span class="tech-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 6v6l4 2"/></svg> Gemini API</span>
+      </div>
+
+      <!-- Features -->
+      <section class="section reveal" id="features" aria-labelledby="features-title">
+        <header class="section-header">
+          <div class="section-label">Features</div>
+          <h2 id="features-title">Your study system,<br>not just a to-do list.</h2>
+          <p class="section-subtitle">Focus timer, structured plans, and analytics — all in one place.</p>
+        </header>
+        <div class="features-grid">
+          <article class="feature-card reveal" style="--ca:#818cf8"
+            data-modal-icon="⏱"
+            data-modal-title="Focus timer with auto-logging"
+            data-modal-body="Start a Pomodoro-style session in one click. Every minute is auto-saved to your history — no manual tracking needed. Works in 25–50 min blocks optimized for deep work.">
+            <div class="feat-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </div>
+            <h3>Focus timer with auto-logging</h3>
+            <p>Start a session, pick a plan, and let the timer handle the rest. Your history builds itself.</p>
+            <span class="feat-tag">25–50 min blocks</span>
+          </article>
+          <article class="feature-card reveal" style="--ca:#22d3ee"
+            data-modal-icon="✦"
+            data-modal-title="AI-suggested goals"
+            data-modal-body="Powered by Gemini, AI Scholar analyzes your topic and difficulty level to suggest a realistic target hour count. Stop guessing how long something will take — get a personalized estimate instantly.">
+            <div class="feat-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 5.5H19l-4.5 3.3 1.7 5.2L12 14l-4.2 3 1.7-5.2L5 8.5h5.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            </div>
+            <h3>AI-suggested goals</h3>
+            <p>Not sure how many hours you need? Get a realistic, personalized target for every topic.</p>
+            <span class="feat-tag">Powered by Gemini</span>
+          </article>
+          <article class="feature-card reveal" style="--ca:#a78bfa"
+            data-modal-icon="📊"
+            data-modal-title="Progress analytics"
+            data-modal-body="Visualize exactly where your study time goes. Daily and weekly charts show which topics get the most focus, how your momentum trends over time, and where to redistribute effort.">
+            <div class="feat-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="14" width="4" height="7" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="10" y="9" width="4" height="12" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="17" y="4" width="4" height="17" rx="1" stroke="currentColor" stroke-width="1.6"/></svg>
+            </div>
+            <h3>Progress analytics</h3>
+            <p>See where your time actually goes — which topics get the most focus and how your week trends.</p>
+            <span class="feat-tag">Daily &amp; weekly views</span>
+          </article>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section class="section reveal" id="how-it-works" aria-labelledby="how-title">
+        <header class="section-header">
+          <div class="section-label">How it works</div>
+          <h2 id="how-title">Four steps. Zero friction.</h2>
+        </header>
+        <div class="steps-grid">
+          <div class="step-item reveal">
+            <div class="step-num" aria-hidden="true">01</div>
+            <div>
+              <h3>Create a plan</h3>
+              <p>Define a topic, difficulty, and target hours for what you want to master.</p>
+            </div>
+          </div>
+          <div class="step-arrow" aria-hidden="true">&rarr;</div>
+          <div class="step-item reveal">
+            <div class="step-num" aria-hidden="true">02</div>
+            <div>
+              <h3>Let AI refine it</h3>
+              <p>AI adjusts your goals or generates a session-by-session outline.</p>
+            </div>
+          </div>
+          <div class="step-arrow" aria-hidden="true">&rarr;</div>
+          <div class="step-item reveal">
+            <div class="step-num" aria-hidden="true">03</div>
+            <div>
+              <h3>Run focus sessions</h3>
+              <p>Pick a plan, start the timer, and stay distraction-free for 25–50 minutes.</p>
+            </div>
+          </div>
+          <div class="step-arrow" aria-hidden="true">&rarr;</div>
+          <div class="step-item reveal">
+            <div class="step-num" aria-hidden="true">04</div>
+            <div>
+              <h3>Review your data</h3>
+              <p>Check completion rates, daily totals, and AI-driven recommendations.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Testimonials -->
+      <section class="section reveal" id="testimonials" aria-labelledby="testimonials-title">
+        <header class="section-header">
+          <div class="section-label">Testimonials</div>
+          <h2 id="testimonials-title">Loved by focused learners.</h2>
+          <p class="section-subtitle">See what students and developers say about AI Scholar.</p>
+        </header>
+        <div class="testimonials-grid">
+          <article class="testimonial-card reveal">
+            <p class="testimonial-quote">I went from studying randomly to having a real system. The focus timer alone doubled my productive hours.</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">PR</div>
+              <div><div class="testimonial-name">Priya R.</div><div class="testimonial-role">CS Student, 3rd Year</div></div>
+            </div>
+          </article>
+          <article class="testimonial-card reveal">
+            <p class="testimonial-quote">The AI goal suggestions are scary accurate. It told me 15 hours for DSA and that's exactly what I needed.</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">AK</div>
+              <div><div class="testimonial-name">Arjun K.</div><div class="testimonial-role">Self-taught Developer</div></div>
+            </div>
+          </article>
+          <article class="testimonial-card reveal">
+            <p class="testimonial-quote">Finally, a study app that doesn't feel like homework to set up. Created my first plan in under a minute.</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">SM</div>
+              <div><div class="testimonial-name">Sneha M.</div><div class="testimonial-role">Engineering Student</div></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="section reveal" id="faq" aria-labelledby="faq-title">
+        <header class="section-header">
+          <div class="section-label">FAQ</div>
+          <h2 id="faq-title">Got questions?</h2>
+        </header>
+        <div class="faq-list">
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">Is AI Scholar really free?<span class="faq-chevron">&#9660;</span></button>
+            <div class="faq-answer">Yes, AI Scholar is completely free to use. No credit card required, no hidden fees. We believe students should have access to great study tools without financial barriers.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">What AI model powers the goal suggestions?<span class="faq-chevron">&#9660;</span></button>
+            <div class="faq-answer">We use Google's Gemini API to analyze your topic and difficulty level, then suggest realistic hour targets based on learning science and common study patterns.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">Does it work on mobile?<span class="faq-chevron">&#9660;</span></button>
+            <div class="faq-answer">Absolutely. AI Scholar is fully responsive and works great on phones and tablets. The focus timer runs perfectly in mobile browsers too.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">Can I track multiple study plans at once?<span class="faq-chevron">&#9660;</span></button>
+            <div class="faq-answer">Yes! You can create as many study plans as you need. Each plan tracks its own hours, progress, and completion rate independently.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">Is my data safe?<span class="faq-chevron">&#9660;</span></button>
+            <div class="faq-answer">Your study data is stored securely and never shared with third parties. We only use your topic info to generate AI suggestions — nothing else.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Why -->
+      <section class="section section-why reveal" id="why" aria-labelledby="why-title">
+        <div class="why-inner">
+          <header class="section-header section-header-center">
+            <div class="section-label">Why AI Scholar</div>
+            <h2 id="why-title">Built for builders,<br>students, and self-taught devs.</h2>
+            <p class="section-subtitle">You already know what to learn. AI Scholar makes it consistent.</p>
+          </header>
+          <div class="pill-row">
+            <span class="pill"><span class="pill-check" aria-hidden="true">&#10003;</span>Track real time, not just tasks</span>
+            <span class="pill"><span class="pill-check" aria-hidden="true">&#10003;</span>Bring structure to long-term goals</span>
+            <span class="pill"><span class="pill-check" aria-hidden="true">&#10003;</span>Use AI where it actually helps</span>
+            <span class="pill"><span class="pill-check" aria-hidden="true">&#10003;</span>Ready in 30 seconds</span>
+          </div>
+          <div class="cta-block">
+            <button class="btn btn-hero ripple-el" id="cta-get-started">Start learning smarter &rarr;</button>
+            <p class="cta-note">Free forever for students &middot; No credit card required</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="landing-footer">
+      <div class="footer-inner">
+        <span class="brand-name-sm" style="color: aqua;">AI Scholar</span>
+        <p class="footer-copy" style="color: aqua;">&copy; <span id="year" style="color: aqua;">{currentYear} </span> AI Scholar. Built for focused learners.</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Sticky Mobile CTA -->
+  <div id="sticky-mobile-cta">
+    <button class="btn btn-primary ripple-el" id="sticky-cta-btn">Get started free &rarr;</button>
+  </div>
+
+  <!-- Auth Modal -->
+  <div class="auth-modal hidden" id="auth-modal" aria-hidden="true">
+    <div class="auth-backdrop" id="auth-backdrop"></div>
+    <div class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <header class="auth-header">
+        <h2 id="auth-title">Log in</h2>
+        <button class="auth-close ripple-el" id="auth-close-btn" aria-label="Close">&#215;</button>
+      </header>
+      <form id="auth-form" class="auth-form" novalidate>
+        <div class="field">
+          <label for="auth-email">Email</label>
+          <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com">
+          <span class="field-error" id="email-error" role="alert"></span>
+        </div>
+        <div class="field">
+          <label for="auth-password">Password</label>
+          <input id="auth-password" type="password" autocomplete="current-password" placeholder="••••••••">
+          <span class="field-error" id="password-error" role="alert"></span>
+        </div>
+        <div class="field hidden" id="confirm-password-field">
+          <label for="auth-confirm-password">Confirm Password</label>
+          <input id="auth-confirm-password" type="password" autocomplete="new-password" placeholder="••••••••">
+          <span class="field-error" id="confirm-password-error" role="alert"></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full ripple-el" id="auth-submit-btn">Log in</button>
+        <p class="auth-toggle-text">
+          <span id="auth-toggle-message">New here?</span>
+          <button type="button" class="auth-toggle-link" id="auth-toggle-mode">Create an account</button>
+        </p>
+        <p class="auth-error" id="auth-error" role="alert"></p>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="scripts/landing.js"></script>
+  <script>
+    // ── LOADING SCREEN ──
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('loader').classList.add('hidden');
+      }, 1500);
+    });
+
+    // ── SCROLL PROGRESS ──
+    const scrollBar = document.getElementById('scroll-progress');
+    window.addEventListener('scroll', () => {
+      const docH = document.documentElement.scrollHeight - window.innerHeight;
+      scrollBar.style.width = (window.scrollY / docH * 100) + '%';
+    }, { passive: true });
+
+    // ── STICKY HEADER ──
+    const header = document.querySelector('.landing-header');
+    let lastY = 0;
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      header.classList.toggle('scrolled', y > 10);
+      header.classList.toggle('hidden-up', y > lastY + 8 && y > 80);
+      if (y < lastY) header.classList.remove('hidden-up');
+      lastY = y;
+    }, { passive: true });
+
+    // ── MOBILE NAV ──
+    const hamburger = document.getElementById('nav-hamburger');
+    const mainNav = document.getElementById('main-nav');
+    hamburger?.addEventListener('click', () => {
+      const isOpen = mainNav.classList.toggle('open');
+      hamburger.classList.toggle('open', isOpen);
+      hamburger.setAttribute('aria-expanded', isOpen);
+    });
+    mainNav?.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        mainNav.classList.remove('open');
+        hamburger?.classList.remove('open');
+      });
+    });
+
+    // ── CURSOR GLOW ──
+    const glow = document.getElementById('cursor-glow');
+    let glowTimer;
+    window.addEventListener('mousemove', e => {
+      glow.style.left = e.clientX + 'px';
+      glow.style.top = e.clientY + 'px';
+      glow.style.opacity = '1';
+      clearTimeout(glowTimer);
+      glowTimer = setTimeout(() => glow.style.opacity = '0', 2200);
+    }, { passive: true });
+
+    // ── BACK TO TOP ──
+    const btt = document.getElementById('back-to-top');
+    window.addEventListener('scroll', () => {
+      btt.classList.toggle('visible', window.scrollY > 400);
+    }, { passive: true });
+    btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    // ── THEME TOGGLE ──
+    const themeBtn = document.getElementById('theme-toggle');
+    let isDark = true;
+    themeBtn.addEventListener('click', () => {
+      isDark = !isDark;
+      document.body.classList.toggle('theme-dark', isDark);
+      document.body.classList.toggle('theme-light', !isDark);
+      themeBtn.textContent = isDark ? '🌙' : '☀️';
+    });
+
+    // ── SIDE PANEL ──
+    const panel = document.getElementById('side-panel');
+    const panelTab = document.getElementById('side-panel-tab');
+    let panelOpen = false;
+    panelTab?.addEventListener('click', () => {
+      panelOpen = !panelOpen;
+      panel.classList.toggle('open', panelOpen);
+    });
+    document.getElementById('side-login-btn')?.addEventListener('click', () => {
+      document.getElementById('btn-open-login')?.click();
+      panel.classList.remove('open'); panelOpen = false;
+    });
+    document.getElementById('side-start-btn')?.addEventListener('click', () => {
+      document.getElementById('nav-get-started')?.click();
+      panel.classList.remove('open'); panelOpen = false;
+    });
+    panel?.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      panel.classList.remove('open'); panelOpen = false;
+    }));
+
+    // ── SCROLL-REVEAL ──
+    const reveals = document.querySelectorAll('.reveal');
+    const revealObs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    reveals.forEach(el => revealObs.observe(el));
+
+    // ── ANIMATED COUNTERS ──
+    const counterEls = document.querySelectorAll('[data-counter]');
+    const counterObs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        const el = e.target;
+        const target = +el.dataset.target;
+        const suffix = el.dataset.suffix || '';
+        const dur = target > 1000 ? 2000 : 1200;
+        let startTime = null;
+        const step = (ts) => {
+          if (!startTime) startTime = ts;
+          const p = Math.min((ts - startTime) / dur, 1);
+          const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+          const val = Math.round(eased * target);
+          el.textContent = val.toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+        counterObs.unobserve(el);
+      });
+    }, { threshold: 0.5 });
+    counterEls.forEach(el => counterObs.observe(el));
+
+    // ── PARALLAX HERO PREVIEW ──
+    const heroPreview = document.getElementById('hero-preview');
+    window.addEventListener('mousemove', e => {
+      if (window.innerWidth < 900) return;
+      const xRatio = (e.clientX / window.innerWidth - 0.5) * 2;
+      const yRatio = (e.clientY / window.innerHeight - 0.5) * 2;
+      heroPreview.style.transform = `perspective(900px) rotateY(${xRatio * 4}deg) rotateX(${-yRatio * 3}deg) translateZ(6px)`;
+    }, { passive: true });
+
+    // ── FEATURE CARD MODAL ──
+    const featModal = document.getElementById('feat-modal');
+    const featModalIcon = document.getElementById('feat-modal-icon');
+    const featModalTitle = document.getElementById('feat-modal-title');
+    const featModalBody = document.getElementById('feat-modal-body');
+    document.querySelectorAll('.feature-card[data-modal-title]').forEach(card => {
+      card.addEventListener('click', () => {
+        featModalIcon.textContent = card.dataset.modalIcon;
+        featModalTitle.textContent = card.dataset.modalTitle;
+        featModalBody.textContent = card.dataset.modalBody;
+        featModal.classList.add('open');
+        featModal.setAttribute('aria-hidden', 'false');
+      });
+    });
+    const closeFeatModal = () => { featModal.classList.remove('open'); featModal.setAttribute('aria-hidden', 'true'); };
+    document.getElementById('feat-modal-close')?.addEventListener('click', closeFeatModal);
+    document.getElementById('feat-modal-backdrop')?.addEventListener('click', closeFeatModal);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFeatModal(); });
+
+    // ── CLICK RIPPLE (soundless visual feedback) ──
+    document.querySelectorAll('.ripple-el').forEach(el => {
+      el.addEventListener('click', function(e) {
+        const rect = this.getBoundingClientRect();
+        const r = document.createElement('span');
+        const size = Math.max(rect.width, rect.height);
+        r.style.cssText = `position:absolute;border-radius:50%;background:rgba(255,255,255,0.25);
+          width:${size}px;height:${size}px;pointer-events:none;
+          left:${e.clientX - rect.left - size/2}px;top:${e.clientY - rect.top - size/2}px;
+          animation:rippleAnim 0.55s ease forwards;`;
+        this.style.position = 'relative';
+        this.style.overflow = 'hidden';
+        this.appendChild(r);
+        setTimeout(() => r.remove(), 600);
+      });
+    });
+
+    // ── SMOOTH SCROLL ──
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const t = document.querySelector(a.getAttribute('href'));
+        if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+      });
+    });
+
+    // ── CTA WIRE-UP ──
+    document.getElementById('cta-get-started')?.addEventListener('click', () => {
+      document.getElementById('hero-get-started')?.click();
+    });
+    document.getElementById('hero-scroll-features')?.addEventListener('click', () => {
+      document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // ── DEMO CANVAS ANIMATION ──
+    const demoCanvas = document.getElementById('demo-canvas');
+    const demoPlay = document.getElementById('demo-play');
+    if (demoCanvas && demoPlay) {
+      const dCtx = demoCanvas.getContext('2d');
+      let demoRunning = false, demoFrame = 0, demoAnimId = null;
+      const DW = 1280, DH = 720;
+
+      function drawDemoFrame() {
+        dCtx.clearRect(0, 0, DW, DH);
+        // Background
+        dCtx.fillStyle = '#0a0c14';
+        dCtx.fillRect(0, 0, DW, DH);
+        // Grid
+        dCtx.strokeStyle = 'rgba(148,163,184,0.04)';
+        dCtx.lineWidth = 1;
+        for (let x = 0; x < DW; x += 40) { dCtx.beginPath(); dCtx.moveTo(x, 0); dCtx.lineTo(x, DH); dCtx.stroke(); }
+        for (let y = 0; y < DH; y += 40) { dCtx.beginPath(); dCtx.moveTo(0, y); dCtx.lineTo(DW, y); dCtx.stroke(); }
+
+        const t = demoFrame / 60; // time in seconds
+
+        // Phase 1: Show "Create Plan" (0-4s)
+        if (t < 4) {
+          drawDemoTitle(dCtx, 'Create a Study Plan', t < 1 ? t : 1);
+          drawDemoInput(dCtx, 'Mastering Machine Learning', t > 1.5 ? Math.min((t - 1.5) * 2, 1) : 0);
+          drawDemoAI(dCtx, 'AI suggests: 20 hours', t > 2.5 ? Math.min((t - 2.5) * 2, 1) : 0);
+        }
+        // Phase 2: Show "Start Timer" (4-8s)
+        else if (t < 8) {
+          drawDemoTitle(dCtx, 'Start Focus Session', 1);
+          drawDemoTimer(dCtx, t > 4.5 ? Math.min((t - 4.5) * 1.5, 1) : 0, (t - 4.5));
+          drawDemoProgress(dCtx, '8 / 20 hours', t > 6 ? Math.min((t - 6) * 2, 1) : 0, 0.4);
+        }
+        // Phase 3: Show "Track Progress" (8-12s)
+        else if (t < 12) {
+          drawDemoTitle(dCtx, 'Track Your Progress', 1);
+          drawDemoChart(dCtx, t > 8.5 ? Math.min((t - 8.5) * 1.5, 1) : 0);
+          drawDemoStats(dCtx, t > 9.5 ? Math.min((t - 9.5) * 2, 1) : 0);
+        }
+        // Phase 4: Loop back
+        else {
+          demoFrame = 0;
+          drawDemoFrame();
+          return;
+        }
+
+        demoFrame++;
+        demoAnimId = requestAnimationFrame(drawDemoFrame);
+      }
+
+      function drawDemoTitle(ctx, text, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.font = 'bold 42px DM Sans, system-ui, sans-serif';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, DW / 2, 120);
+        ctx.restore();
+      }
+
+      function drawDemoInput(ctx, text, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        // Input box
+        const x = DW / 2 - 250, y = 180, w = 500, h = 56;
+        ctx.fillStyle = 'rgba(30,32,48,0.9)';
+        ctx.strokeStyle = 'rgba(129,140,248,0.4)';
+        ctx.lineWidth = 1.5;
+        roundRect(ctx, x, y, w, h, 12);
+        ctx.fill(); ctx.stroke();
+        // Label
+        ctx.font = '500 14px DM Sans, system-ui, sans-serif';
+        ctx.fillStyle = '#818cf8';
+        ctx.textAlign = 'left';
+        ctx.fillText('TOPIC', x + 16, y - 10);
+        // Text with typing effect
+        const showLen = Math.floor(text.length * Math.min(alpha * 1.5, 1));
+        ctx.font = '400 18px DM Sans, system-ui, sans-serif';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(text.substring(0, showLen), x + 16, y + 34);
+        // Cursor blink
+        if (alpha < 1 && Math.floor(Date.now() / 500) % 2 === 0) {
+          const tw = ctx.measureText(text.substring(0, showLen)).width;
+          ctx.fillStyle = '#818cf8';
+          ctx.fillRect(x + 18 + tw, y + 16, 2, 24);
+        }
+        ctx.restore();
+      }
+
+      function drawDemoAI(ctx, text, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        // AI suggestion card
+        const x = DW / 2 - 180, y = 270, w = 360, h = 48;
+        ctx.fillStyle = 'rgba(129,140,248,0.1)';
+        ctx.strokeStyle = 'rgba(129,140,248,0.25)';
+        ctx.lineWidth = 1;
+        roundRect(ctx, x, y, w, h, 10);
+        ctx.fill(); ctx.stroke();
+        // Star icon
+        ctx.font = '18px sans-serif';
+        ctx.fillStyle = '#818cf8';
+        ctx.fillText('✦', x + 16, y + 30);
+        // Text
+        ctx.font = '500 15px DM Sans, system-ui, sans-serif';
+        ctx.fillStyle = '#c4b5fd';
+        ctx.textAlign = 'left';
+        ctx.fillText(text, x + 44, y + 30);
+        ctx.restore();
+      }
+
+      function drawDemoTimer(ctx, alpha, elapsed) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        // Timer ring
+        const cx = DW / 2, cy = 380, r = 80;
+        // Background ring
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(148,163,184,0.15)'; ctx.lineWidth = 8; ctx.stroke();
+        // Progress ring
+        const progress = Math.min(elapsed / 3, 1) * 0.7;
+        ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+        const grad = ctx.createLinearGradient(cx - r, cy, cx + r, cy);
+        grad.addColorStop(0, '#818cf8'); grad.addColorStop(1, '#22d3ee');
+        ctx.strokeStyle = grad; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.stroke();
+        // Time text
+        const mins = Math.floor(elapsed * 2) % 25;
+        const secs = Math.floor(elapsed * 30) % 60;
+        ctx.font = 'bold 36px DM Sans, system-ui, sans-serif';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(24 - mins).padStart(2, '0') + ':' + String(59 - secs).padStart(2, '0'), cx, cy + 12);
+        // Session label
+        ctx.font = '500 16px DM Sans, system-ui, sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('Deep Work Block', cx, cy + 110);
+        ctx.restore();
+      }
+
+      function drawDemoProgress(ctx, text, alpha, progress) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        const x = DW / 2 - 160, y = 520, w = 320, h = 10;
+        // Bar background
+        ctx.fillStyle = 'rgba(148,163,184,0.12)';
+        roundRect(ctx, x, y, w, h, 5); ctx.fill();
+        // Bar fill
+        const grad = ctx.createLinearGradient(x, y, x + w * progress, y);
+        grad.addColorStop(0, '#818cf8'); grad.addColorStop(1, '#22d3ee');
+        ctx.fillStyle = grad;
+        roundRect(ctx, x, y, w * progress, h, 5); ctx.fill();
+        // Text
+        ctx.font = '500 14px DM Sans, system-ui, sans-serif';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, DW / 2, y + 35);
+        ctx.restore();
+      }
+
+      function drawDemoChart(ctx, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        const x = DW / 2 - 200, y = 200, w = 400, h = 250;
+        // Chart background
+        ctx.fillStyle = 'rgba(30,32,48,0.6)';
+        ctx.strokeStyle = 'rgba(148,163,184,0.1)';
+        ctx.lineWidth = 1;
+        roundRect(ctx, x, y, w, h, 12); ctx.fill(); ctx.stroke();
+        // Bars
+        const barData = [0.6, 0.8, 0.45, 0.9, 0.7, 0.85, 0.65];
+        const barW = 36, barGap = 16, startX = x + 40;
+        barData.forEach((val, i) => {
+          const bx = startX + i * (barW + barGap);
+          const bh = val * 180 * Math.min(alpha * 1.5, 1);
+          const grad = ctx.createLinearGradient(bx, y + 220 - bh, bx, y + 220);
+          grad.addColorStop(0, '#818cf8'); grad.addColorStop(1, 'rgba(129,140,248,0.3)');
+          ctx.fillStyle = grad;
+          roundRect(ctx, bx, y + 220 - bh, barW, bh, 4); ctx.fill();
+          // Day label
+          ctx.font = '400 11px DM Sans, system-ui, sans-serif';
+          ctx.fillStyle = '#64748b';
+          ctx.textAlign = 'center';
+          ctx.fillText(['M', 'T', 'W', 'T', 'F', 'S', 'S'][i], bx + barW / 2, y + 240);
+        });
+        ctx.restore();
+      }
+
+      function drawDemoStats(ctx, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        const stats = [
+          { label: 'Total Hours', value: '42.5h', x: DW / 2 - 180 },
+          { label: 'Sessions', value: '28', x: DW / 2 - 40 },
+          { label: 'Streak', value: '7 days', x: DW / 2 + 100 }
+        ];
+        stats.forEach(s => {
+          ctx.font = 'bold 28px DM Sans, system-ui, sans-serif';
+          ctx.fillStyle = '#e2e8f0';
+          ctx.textAlign = 'center';
+          ctx.fillText(s.value, s.x, 520);
+          ctx.font = '500 13px DM Sans, system-ui, sans-serif';
+          ctx.fillStyle = '#64748b';
+          ctx.fillText(s.label, s.x, 545);
+        });
+        ctx.restore();
+      }
+
+      function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
+      demoPlay.addEventListener('click', () => {
+        if (demoRunning) return;
+        demoRunning = true;
+        demoFrame = 0;
+        demoPlay.classList.add('hidden');
+        drawDemoFrame();
+      });
+    }
+
+    // ── PREVIEW TIMER ANIMATION ──
+    const previewTimeVal = document.querySelector('.preview-time-val');
+    if (previewTimeVal) {
+      let pMin = 25, pSec = 0, pRunning = false;
+      function updatePreviewTimer() {
+        if (!pRunning) return;
+        if (pSec === 0 && pMin === 0) { pRunning = false; previewTimeVal.textContent = '00:00'; return; }
+        if (pSec === 0) { pMin--; pSec = 59; } else { pSec--; }
+        previewTimeVal.textContent = String(pMin).padStart(2,'0') + ':' + String(pSec).padStart(2,'0');
+      }
+      // Simulate ticking every few seconds for visual effect
+      setInterval(() => {
+        if (!pRunning && Math.random() < 0.15) { pRunning = true; }
+        if (pRunning) updatePreviewTimer();
+      }, 1000);
+    }
+
+    // ── PARTICLE BACKGROUND (enhanced with connections) ──
+    const pCanvas = document.getElementById('particle-canvas');
+    if (pCanvas) {
+      const ctx = pCanvas.getContext('2d');
+      let pW, pH, particles = [], mouse = { x: -1000, y: -1000 };
+      function resizeParticles() { pW = pCanvas.width = window.innerWidth; pH = pCanvas.height = window.innerHeight; }
+      resizeParticles();
+      window.addEventListener('resize', resizeParticles);
+      document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+      // Create particles with varying properties
+      const PARTICLE_COUNT = 80;
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const isStar = Math.random() < 0.3;
+        particles.push({
+          x: Math.random() * pW, y: Math.random() * pH,
+          vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+          r: isStar ? Math.random() * 2 + 1 : Math.random() * 1.5 + 0.5,
+          o: Math.random() * 0.6 + 0.2,
+          isStar: isStar,
+          pulse: Math.random() * Math.PI * 2, pulseSpeed: Math.random() * 0.02 + 0.005
+        });
+      }
+      function drawParticles() {
+        ctx.clearRect(0, 0, pW, pH);
+        // Draw connections between nearby particles
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 120) {
+              const alpha = (1 - dist / 120) * 0.15;
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.strokeStyle = `rgba(129,140,248,${alpha})`;
+              ctx.lineWidth = 0.5;
+              ctx.stroke();
+            }
+          }
+        }
+        // Draw particles
+        particles.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          p.pulse += p.pulseSpeed;
+          if (p.x < 0) p.x = pW; if (p.x > pW) p.x = 0;
+          if (p.y < 0) p.y = pH; if (p.y > pH) p.y = 0;
+          // Mouse interaction - gentle repulsion
+          const dx = p.x - mouse.x, dy = p.y - mouse.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 150) {
+            const force = (150 - dist) / 150 * 0.02;
+            p.vx += (dx / dist) * force;
+            p.vy += (dy / dist) * force;
+          }
+          // Dampen velocity
+          p.vx *= 0.999; p.vy *= 0.999;
+          // Pulsing opacity for star particles
+          const pulseO = p.isStar ? p.o + Math.sin(p.pulse) * 0.15 : p.o;
+          // Draw glow for star particles
+          if (p.isStar) {
+            ctx.beginPath();
+            const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
+            gradient.addColorStop(0, `rgba(129,140,248,${pulseO * 0.4})`);
+            gradient.addColorStop(1, 'rgba(129,140,248,0)');
+            ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+          }
+          // Draw particle
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = p.isStar ? `rgba(200,210,255,${pulseO})` : `rgba(129,140,248,${pulseO})`;
+          ctx.fill();
+        });
+        requestAnimationFrame(drawParticles);
+      }
+      drawParticles();
+    }
+
+    // ── STICKY MOBILE CTA ──
+    const stickyCta = document.getElementById('sticky-mobile-cta');
+    const stickyCtaBtn = document.getElementById('sticky-cta-btn');
+    if (stickyCtaBtn) stickyCtaBtn.addEventListener('click', () => showAuth('signup'));
+    const heroSection = document.getElementById('hero');
+    function updateStickyCta() {
+      if (!heroSection || !stickyCta) return;
+      const rect = heroSection.getBoundingClientRect();
+      if (rect.bottom < 0) { stickyCta.classList.add('visible'); }
+      else { stickyCta.classList.remove('visible'); }
+    }
+    window.addEventListener('scroll', updateStickyCta, { passive: true });
+
+    // ── FAQ TOGGLE ──
+    document.querySelectorAll('.faq-question').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.parentElement;
+        const isOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item.open').forEach(i => { i.classList.remove('open'); i.querySelector('.faq-question').setAttribute('aria-expanded', 'false'); });
+        if (!isOpen) { item.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+      });
+    });
+
+    // ── TYPING ANIMATION ──
+    const typedEl = document.getElementById('hero-typed');
+    const phrases = ['focused momentum.', 'consistent progress.', 'smart planning.', 'real results.'];
+    let phraseIdx = 0, charIdx = phrases[0].length, isDeleting = true;
+    function typeLoop() {
+      const current = phrases[phraseIdx];
+      if (isDeleting) {
+        charIdx--;
+        typedEl.textContent = current.substring(0, charIdx);
+        if (charIdx === 0) { isDeleting = false; phraseIdx = (phraseIdx + 1) % phrases.length; setTimeout(typeLoop, 400); return; }
+        setTimeout(typeLoop, 40);
+      } else {
+        charIdx++;
+        typedEl.textContent = current.substring(0, charIdx);
+        if (charIdx === current.length) { isDeleting = true; setTimeout(typeLoop, 2200); return; }
+        setTimeout(typeLoop, 70);
+      }
+    }
+    setTimeout(typeLoop, 3000);
+  </script>
+</body>
+</html>

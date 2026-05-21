@@ -1,0 +1,2572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Scholar – Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+  <style>
+    /* ─── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { text-size-adjust: none; }
+    body { min-height: 100vh; font-family: 'Manrope', system-ui, sans-serif; line-height: 1.5; }
+    img, svg { display: block; max-width: 100%; }
+    input, select, textarea, button { font: inherit; color: inherit; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ─── Design Tokens ──────────────────────────────────────── */
+    :root {
+      /* Core palette */
+      --bg:        #0b0d14;
+      --bg-raised:  #111420;
+      --bg-card:    #161929;
+      --border:     rgba(255,255,255,0.08);
+      --border-mid: rgba(255,255,255,0.14);
+
+      /* Text */
+      --tx-1: #eef0f8;
+      --tx-2: #9da3bb;
+      --tx-3: #5d647e;
+
+      /* Section accent palette */
+      --clr-dash:      #6c63ff;  /* violet   – Dashboard */
+      --clr-dash-soft: rgba(108,99,255,0.15);
+      --clr-plans:     #0ea5e9;  /* sky blue  – Study Plans */
+      --clr-plans-soft:rgba(14,165,233,0.14);
+      --clr-analytics: #10b981;  /* emerald  – Analytics */
+      --clr-analytics-soft:rgba(16,185,129,0.13);
+      --clr-courses:   #f59e0b;  /* amber    – Courses */
+      --clr-courses-soft:rgba(245,158,11,0.13);
+      --clr-generator: #ec4899;  /* pink     – Plan Generator */
+      --clr-generator-soft:rgba(236,72,153,0.13);
+      --clr-profile:   #a78bfa;  /* lavender – Profile */
+      --clr-profile-soft:rgba(167,139,250,0.13);
+      --clr-chat:      #14b8a6;  /* teal – AI Chat */
+      --clr-chat-soft: rgba(20,184,166,0.13);
+
+      --radius-sm: 0.5rem;
+      --radius-md: 0.85rem;
+      --radius-lg: 1.2rem;
+      --radius-xl: 1.6rem;
+
+      --ease: cubic-bezier(0.4,0,0.2,1);
+      --fast: 150ms;
+      --med:  240ms;
+    }
+
+    body.theme-light {
+      --bg:        #f1f3fb;
+      --bg-raised: #ffffff;
+      --bg-card:   #ffffff;
+      --border:    rgba(0,0,0,0.08);
+      --border-mid:rgba(0,0,0,0.14);
+      --tx-1: #111420;
+      --tx-2: #4b5168;
+      --tx-3: #9da3bb;
+    }
+
+    /* ─── Scrollbar ──────────────────────────────────────────── */
+    *::-webkit-scrollbar { width: 6px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    *::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
+
+    /* ─── App Shell ──────────────────────────────────────────── */
+    .app-shell {
+      display: flex;
+      height: 100vh;
+      background: var(--bg);
+      color: var(--tx-1);
+      overflow: hidden;
+    }
+
+    /* ─── Sidebar ────────────────────────────────────────────── */
+    .sidebar {
+      width: 230px;
+      flex-shrink: 0;
+      background: var(--bg-raised);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 1.4rem 0.9rem;
+      gap: 0.25rem;
+      transition: transform var(--med) var(--ease);
+      z-index: 30;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0 0.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.5rem;
+    }
+
+    .brand-orb {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .brand-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1rem; }
+    .brand-tagline { font-size: 0.7rem; color: var(--tx-3); margin-top: -1px; }
+
+    .nav-section-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--tx-3);
+      padding: 0.85rem 0.6rem 0.3rem;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      width: 100%;
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      border-radius: var(--radius-md);
+      border: none;
+      background: transparent;
+      color: var(--tx-2);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background var(--fast) var(--ease), color var(--fast) var(--ease), transform var(--fast);
+      position: relative;
+    }
+
+    .nav-btn .nav-icon {
+      width: 28px; height: 28px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.04);
+      transition: background var(--fast);
+    }
+
+    .nav-btn:hover { background: rgba(255,255,255,0.05); color: var(--tx-1); transform: translateX(2px); }
+    .nav-btn.active { color: var(--tx-1); background: var(--section-soft); }
+    .nav-btn.active .nav-icon { background: var(--section-color); color: #fff; }
+
+    /* Per-section colours injected inline */
+    .nav-btn[data-view="dashboard"]  { --section-color: var(--clr-dash);      --section-soft: var(--clr-dash-soft); }
+    .nav-btn[data-view="plans"]      { --section-color: var(--clr-plans);     --section-soft: var(--clr-plans-soft); }
+    .nav-btn[data-view="analytics"]  { --section-color: var(--clr-analytics); --section-soft: var(--clr-analytics-soft); }
+    .nav-btn[data-view="courses"]    { --section-color: var(--clr-courses);   --section-soft: var(--clr-courses-soft); }
+    .nav-btn[data-view="generator"]  { --section-color: var(--clr-generator); --section-soft: var(--clr-generator-soft); }
+    .nav-btn[data-view="profile"]    { --section-color: var(--clr-profile);   --section-soft: var(--clr-profile-soft); }
+    .nav-btn[data-view="chat"]       { --section-color: #14b8a6; --section-soft: rgba(20,184,166,0.13); }
+
+    .nav-btn.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 15%; bottom: 15%;
+      width: 3px;
+      border-radius: 999px;
+      background: var(--section-color);
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ─── Main ───────────────────────────────────────────────── */
+    .app-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ─── Header ─────────────────────────────────────────────── */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-raised);
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 0.75rem; }
+    .header-greeting { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.05rem; }
+    .header-subtitle { font-size: 0.78rem; color: var(--tx-2); }
+
+    .header-pills { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+    .hpill {
+      display: flex; align-items: center; gap: 0.3rem;
+      padding: 0.3rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--tx-2);
+    }
+
+    .hpill-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dot-clr, #6c63ff); }
+
+    .icon-btn {
+      width: 34px; height: 34px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      color: var(--tx-2);
+      transition: background var(--fast), color var(--fast);
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.07); color: var(--tx-1); }
+
+    /* ─── Content ────────────────────────────────────────────── */
+    .app-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.8rem 2rem;
+    }
+
+    .view-panel { display: none; }
+    .view-panel.active { display: block; animation: fadeUp 0.28s var(--ease); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Section Header ─────────────────────────────────────── */
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+    }
+
+    .section-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .section-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--tx-3);
+    }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.4rem;
+      color: var(--tx-1);
+    }
+
+    .section-desc { font-size: 0.85rem; color: var(--tx-2); margin-top: 0.2rem; max-width: 55ch; }
+
+    /* ─── Cards / Panels ─────────────────────────────────────── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.3rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color var(--fast), box-shadow var(--fast);
+    }
+    .card:hover { border-color: var(--border-mid); }
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--tx-2);
+      margin-bottom: 0.9rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .card-title-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent, #6c63ff);
+      flex-shrink: 0;
+    }
+
+    /* ─── Grid helpers ───────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .grid-2-1 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 1.2rem; }
+    .col { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* ─── Stat Cards ─────────────────────────────────────────── */
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.1rem 1.2rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform var(--fast), box-shadow var(--fast), border-color var(--fast);
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); border-color: var(--border-mid); }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: var(--accent-soft, var(--clr-dash-soft));
+      filter: blur(20px);
+      transform: translate(30px, -30px);
+    }
+
+    .stat-label { font-size: 0.74rem; color: var(--tx-2); margin-bottom: 0.35rem; }
+    .stat-value { font-family: 'DM Mono', monospace; font-size: 1.8rem; font-weight: 500; color: var(--tx-1); line-height: 1; }
+    .stat-sub { font-size: 0.72rem; color: var(--tx-3); margin-top: 0.3rem; }
+    .stat-badge {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 999px;
+      background: rgba(16,185,129,0.15); color: #10b981; margin-top: 0.4rem;
+    }
+
+    /* ─── DASHBOARD ──────────────────────────────────────────── */
+    #view-dashboard { --accent: var(--clr-dash); }
+
+    .timer-wrapper {
+      background: linear-gradient(135deg, rgba(108,99,255,0.1), rgba(14,165,233,0.06));
+      border: 1px solid rgba(108,99,255,0.3);
+      border-radius: var(--radius-xl);
+      padding: 1.8rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .timer-wrapper::before {
+      content: '';
+      position: absolute;
+      inset: -50%;
+      background: radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .timer-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border-mid);
+      border-radius: 999px;
+      padding: 0.4rem 1rem;
+      font-size: 0.83rem;
+      color: var(--tx-1);
+      width: 100%;
+      max-width: 260px;
+      cursor: pointer;
+    }
+
+    .timer-ring {
+      position: relative;
+      width: 150px; height: 150px;
+    }
+
+    .timer-ring svg { position: absolute; inset: 0; }
+
+    .timer-num {
+      position: absolute;
+      inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 2.2rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+
+    .timer-btns { display: flex; gap: 0.6rem; }
+
+    .timer-presets { display: flex; gap: 0.4rem; }
+
+    .preset-chip {
+      padding: 0.3rem 0.85rem;
+      border-radius: 999px;
+      border: 1px solid var(--border-mid);
+      background: transparent;
+      font-size: 0.78rem;
+      color: var(--tx-2);
+      cursor: pointer;
+      transition: all var(--fast);
+    }
+    .preset-chip:hover, .preset-chip.active { background: rgba(108,99,255,0.2); border-color: var(--clr-dash); color: #a5b4fc; }
+
+    .session-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 240px; overflow-y: auto; }
+
+    .session-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.8rem;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.82rem;
+      transition: border-color var(--fast);
+    }
+    .session-row:hover { border-color: var(--border-mid); }
+    .session-name { font-weight: 500; }
+    .session-time { font-size: 0.74rem; color: var(--tx-2); margin-top: 1px; }
+    .session-dur { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--clr-dash); }
+
+    /* ─── STUDY PLANS ────────────────────────────────────────── */
+    #view-plans { --accent: var(--clr-plans); }
+
+    .plan-form-card {
+      background: var(--clr-plans-soft);
+      border: 1px solid rgba(14,165,233,0.25);
+      border-radius: var(--radius-xl);
+      padding: 1.4rem;
+    }
+
+    .plan-form-card .card-title { color: var(--clr-plans); }
+    .plan-form-card .card-title-dot { background: var(--clr-plans); }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    .form-label { font-size: 0.77rem; color: var(--tx-2); font-weight: 500; }
+    .form-input, .form-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-md);
+      padding: 0.55rem 0.8rem;
+      font-size: 0.88rem;
+      color: var(--tx-1);
+      transition: border-color var(--fast), box-shadow var(--fast);
+      width: 100%;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--clr-plans);
+      box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
+    }
+    .form-input-full { grid-column: 1 / -1; }
+
+    .plan-list { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 1.2rem; }
+
+    .plan-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: border-color var(--fast), transform var(--fast);
+      position: relative;
+    }
+    .plan-card:hover { border-color: rgba(14,165,233,0.4); transform: translateX(3px); }
+    .plan-card-icon {
+      width: 38px; height: 38px;
+      border-radius: var(--radius-sm);
+      background: var(--clr-plans-soft);
+      border: 1px solid rgba(14,165,233,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .plan-body { flex: 1; min-width: 0; }
+    .plan-name { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .plan-info { font-size: 0.76rem; color: var(--tx-2); margin-top: 2px; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .plan-info-tag { padding: 0.1rem 0.4rem; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); }
+
+    .plan-progress-wrap { margin-top: 6px; }
+    .progress-bar { width: 100%; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.07); overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--clr-plans), #38bdf8); transition: width 400ms var(--ease); }
+    .progress-text { display: flex; justify-content: space-between; font-size: 0.71rem; color: var(--tx-3); margin-top: 3px; }
+
+    .plan-card-actions { display: flex; flex-direction: column; gap: 0.3rem; flex-shrink: 0; }
+
+    /* ─── ANALYTICS ──────────────────────────────────────────── */
+    #view-analytics { --accent: var(--clr-analytics); }
+
+    .analytics-bar-chart { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem; }
+
+    .bar-row { display: flex; align-items: center; gap: 0.8rem; }
+    .bar-label { font-size: 0.78rem; color: var(--tx-2); min-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-track { flex: 1; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.05); overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--clr-analytics), #34d399); transition: width 600ms var(--ease); }
+    .bar-val { font-family: 'DM Mono', monospace; font-size: 0.76rem; color: var(--tx-2); min-width: 38px; text-align: right; }
+
+    .analytics-table-wrap { overflow-x: auto; margin-top: 0.5rem; }
+    .analytics-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    .analytics-table th { text-align: left; padding: 0.5rem 0.8rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tx-3); border-bottom: 1px solid var(--border); }
+    .analytics-table td { padding: 0.65rem 0.8rem; border-bottom: 1px solid var(--border); color: var(--tx-1); }
+    .analytics-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .pct-badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.72rem; font-family: 'DM Mono', monospace; background: rgba(16,185,129,0.15); color: #10b981; }
+
+    /* ─── COURSES ────────────────────────────────────────────── */
+    #view-courses { --accent: var(--clr-courses); }
+
+    .courses-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+
+    .course-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.2rem;
+      display: flex; flex-direction: column; gap: 0.7rem;
+      position: relative; overflow: hidden;
+      transition: transform var(--fast), border-color var(--fast), box-shadow var(--fast);
+    }
+    .course-card:hover { transform: translateY(-3px); border-color: rgba(245,158,11,0.35); box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+    .course-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--clr-courses), #fb923c);
+      opacity: 0;
+      transition: opacity var(--fast);
+    }
+    .course-card:hover::before { opacity: 1; }
+
+    .course-icon {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-md);
+      background: var(--clr-courses-soft);
+      border: 1px solid rgba(245,158,11,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+    }
+    .course-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.92rem; line-height: 1.3; }
+    .course-desc { font-size: 0.8rem; color: var(--tx-2); line-height: 1.5; flex: 1; }
+    .course-tag { display: inline-block; font-size: 0.68rem; padding: 0.15rem 0.5rem; border-radius: 4px; background: var(--clr-courses-soft); color: var(--clr-courses); border: 1px solid rgba(245,158,11,0.2); margin-bottom: 0.2rem; }
+
+    .tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 0.5rem; }
+
+    .tip-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.9rem;
+      display: flex; gap: 0.7rem;
+      align-items: flex-start;
+      transition: border-color var(--fast);
+    }
+    .tip-card:hover { border-color: rgba(245,158,11,0.3); }
+    .tip-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+    .tip-text { font-size: 0.82rem; color: var(--tx-2); line-height: 1.5; }
+
+    /* ─── PLAN GENERATOR ─────────────────────────────────────── */
+    #view-generator { --accent: var(--clr-generator); }
+
+    .generator-layout { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.2rem; }
+
+    .gen-form-wrap {
+      background: linear-gradient(135deg, rgba(236,72,153,0.07), rgba(168,85,247,0.05));
+      border: 1px solid rgba(236,72,153,0.22);
+      border-radius: var(--radius-xl);
+      padding: 1.6rem;
+    }
+    .gen-form-wrap .form-input:focus, .gen-form-wrap .form-select:focus {
+      border-color: var(--clr-generator);
+      box-shadow: 0 0 0 3px rgba(236,72,153,0.12);
+    }
+
+    .gen-output {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 1.4rem;
+      min-height: 200px;
+      display: flex; flex-direction: column;
+    }
+
+    .gen-placeholder {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0.5rem;
+      color: var(--tx-3);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    .gen-placeholder .big-icon { font-size: 2.5rem; }
+
+    .gen-result { font-size: 0.85rem; color: var(--tx-1); line-height: 1.7; white-space: pre-wrap; flex: 1; overflow-y: auto; }
+
+    /* ─── PROFILE & SETTINGS ──────────────────────────────────── */
+    #view-profile { --accent: var(--clr-profile); }
+
+    .profile-layout { display: grid; grid-template-columns: 260px 1fr; gap: 1.2rem; }
+
+    .profile-avatar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 1.6rem;
+      display: flex; flex-direction: column; align-items: center; gap: 0.8rem;
+      text-align: center;
+    }
+
+    .avatar-ring {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--clr-profile), var(--clr-dash));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
+      box-shadow: 0 0 25px rgba(167,139,250,0.35);
+    }
+    .avatar-name { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700; }
+    .avatar-email { font-size: 0.78rem; color: var(--tx-2); }
+    .avatar-badge {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.2rem 0.7rem; border-radius: 999px;
+      background: var(--clr-profile-soft); color: var(--clr-profile);
+      border: 1px solid rgba(167,139,250,0.25);
+      font-size: 0.72rem; font-weight: 600;
+    }
+
+    .settings-sections { display: flex; flex-direction: column; gap: 1rem; }
+
+    .settings-group {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.2rem 1.3rem;
+    }
+    .settings-group-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--clr-profile);
+      margin-bottom: 0.9rem;
+      font-weight: 600;
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-key { font-size: 0.84rem; font-weight: 500; }
+    .settings-desc { font-size: 0.74rem; color: var(--tx-2); margin-top: 1px; }
+    .settings-ctrl { flex-shrink: 0; margin-left: 1rem; }
+
+    /* Toggle switch */
+    .toggle {
+      width: 40px; height: 22px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid var(--border-mid);
+      position: relative;
+      cursor: pointer;
+      transition: background var(--fast);
+    }
+    .toggle.on { background: var(--clr-profile); border-color: var(--clr-profile); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform var(--fast);
+    }
+    .toggle.on::after { transform: translateX(18px); }
+
+    /* ─── Buttons ────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 0.83rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--fast);
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--clr-dash), var(--clr-plans));
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(108,99,255,0.35);
+    }
+    .btn-primary:hover { filter: brightness(1.1); box-shadow: 0 6px 22px rgba(108,99,255,0.45); }
+
+    .btn-accent {
+      background: var(--accent, var(--clr-plans));
+      color: #fff;
+    }
+    .btn-accent:hover { filter: brightness(1.1); }
+
+    .btn-ghost {
+      background: transparent;
+      border-color: var(--border-mid);
+      color: var(--tx-2);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.06); color: var(--tx-1); }
+
+    .btn-danger { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+    .btn-danger:hover { background: rgba(239,68,68,0.22); }
+
+    .btn-sm { padding: 0.3rem 0.75rem; font-size: 0.77rem; }
+    .btn-full { width: 100%; }
+
+    /* ─── Login Modal ────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--med);
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal-box {
+      background: var(--bg-raised);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      width: 100%; max-width: 400px;
+      transform: translateY(20px) scale(0.97);
+      transition: transform var(--med) var(--ease), opacity var(--med);
+      opacity: 0;
+    }
+    .modal-overlay.open .modal-box { transform: translateY(0) scale(1); opacity: 1; }
+
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .modal-title { font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 800; }
+
+    .modal-logo {
+      display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.2rem;
+      padding-bottom: 1.2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-logo .brand-orb { width: 28px; height: 28px; }
+    .modal-logo span { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.95rem; }
+
+    .modal-form { display: flex; flex-direction: column; gap: 0.9rem; }
+    .modal-form .form-input:focus {
+      border-color: var(--clr-dash);
+      box-shadow: 0 0 0 3px rgba(108,99,255,0.15);
+    }
+
+    .auth-toggle-text { font-size: 0.8rem; color: var(--tx-2); text-align: center; margin-top: 0.3rem; }
+    .auth-toggle-link { background: none; border: none; color: var(--clr-dash); font-size: 0.8rem; cursor: pointer; text-decoration: underline; }
+
+    .auth-error {
+      font-size: 0.8rem; color: #fca5a5;
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.8rem;
+      display: none;
+    }
+    .auth-error.visible { display: block; line-height: 1.5; }
+    .auth-error button { vertical-align: baseline; }
+
+    .field-error {
+      font-size: 0.73rem;
+      color: #f87171;
+      min-height: 0.9rem;
+      line-height: 1.3;
+    }
+
+    .form-input.input-invalid {
+      border-color: rgba(248, 113, 113, 0.6) !important;
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.12) !important;
+    }
+
+    /* ─── Empty State ────────────────────────────────────────── */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 2.5rem 1rem;
+      gap: 0.6rem;
+      color: var(--tx-3);
+      text-align: center;
+    }
+    .empty-icon { font-size: 2.2rem; }
+    .empty-state h3 { font-size: 0.9rem; color: var(--tx-2); font-weight: 600; }
+    .empty-state p { font-size: 0.8rem; }
+
+    /* ─── Chips ──────────────────────────────────────────────── */
+    .chip {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      border: 1px solid var(--border-mid);
+      background: rgba(255,255,255,0.04);
+      color: var(--tx-2);
+    }
+
+    .chip-green { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: #34d399; }
+    .chip-blue  { background: rgba(14,165,233,0.12); border-color: rgba(14,165,233,0.3); color: #38bdf8; }
+    .chip-red   { background: rgba(239,68,68,0.12);  border-color: rgba(239,68,68,0.3);  color: #fca5a5; }
+    .chip-violet{ background: rgba(108,99,255,0.12); border-color: rgba(108,99,255,0.3); color: #a5b4fc; }
+
+    /* ─── Resources Section ──────────────────────────────────── */
+    #view-resources { --accent: var(--clr-courses); }
+
+    .resource-list { display: flex; flex-direction: column; gap: 0.6rem; }
+    .resource-item {
+      display: flex; align-items: center; gap: 0.9rem;
+      padding: 0.8rem 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      transition: border-color var(--fast), transform var(--fast);
+    }
+    a.resource-item { text-decoration: none; color: inherit; cursor: pointer; }
+    a.resource-item:hover { border-color: rgba(245,158,11,0.3); transform: translateX(3px); }
+    .resource-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--clr-courses-soft);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .resource-body { flex: 1; }
+    .resource-name { font-weight: 600; font-size: 0.85rem; }
+    .resource-meta { font-size: 0.74rem; color: var(--tx-2); }
+
+    /* ─── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; inset: 0 auto 0 0; transform: translateX(-100%); transition: transform var(--med) var(--ease); }
+      .sidebar.open { transform: none; }
+      .app-content { padding: 1.2rem; }
+      .generator-layout, .profile-layout, .grid-2-1 { grid-template-columns: 1fr; }
+      .grid-3, .courses-grid { grid-template-columns: 1fr 1fr; }
+      .tips-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .grid-2, .grid-3, .courses-grid, .form-grid { grid-template-columns: 1fr; }
+      .form-input-full { grid-column: auto; }
+    }
+
+    /* ─── Misc helpers ───────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .mt-1 { margin-top: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+    .flex { display: flex; }
+    .gap-1 { gap: 0.5rem; }
+    .gap-2 { gap: 1rem; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .fw { width: 100%; }
+
+
+
+
+
+
+
+    /*     Added       */
+    /* Responsive layout */
+
+/* Tablet: slightly narrower sidebar & tighter padding */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 210px;
+  }
+
+  .app-header {
+    padding: 0.9rem 1.4rem;
+  }
+
+  .app-content {
+    padding: 1.4rem 1.6rem;
+  }
+}
+
+/* Mobile / small tablets: off‑canvas sidebar */
+@media (max-width: 900px) {
+  .app-shell {
+    position: relative;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;          /* full height on the left */
+    width: 260px;
+    max-width: 80%;
+    transform: translateX(-100%);
+    background: var(--bg-raised);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.65);
+    z-index: 40;
+    transition: transform var(--med) var(--ease);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .app-main {
+    flex: 1;
+  }
+
+  .app-content {
+    padding: 1.2rem;
+  }
+
+  .app-header {
+    padding: 0.8rem 1.2rem;
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+
+  .header-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Narrow mobile: single‑column grids */
+@media (max-width: 600px) {
+  .grid-2,
+  .grid-3,
+  .courses-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .generator-layout,
+  .profile-layout,
+  .grid-2-1 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Light theme: slightly softer overlay */
+.theme-light .modal-overlay {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* ─── Sidebar backdrop (mobile) ─────────────────────────────── */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 39;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity var(--med) var(--ease);
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .sidebar-backdrop {
+    display: block;
+  }
+  .sidebar-backdrop.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+}
+
+
+    /* ─── AI CHAT ──────────────────────────────────────────────── */
+    #view-chat { --accent: var(--clr-chat); }
+
+    .botpress-chat-container {
+      flex: 1;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      height: calc(100vh - 220px);
+      min-height: 400px;
+    }
+
+    .botpress-chat-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* Heatmap */
+    .heatmap-wrap { overflow-x: auto; padding: 0.5rem 0; }
+    .heatmap-grid {
+      display: grid; grid-template-rows: repeat(7, 1fr);
+      grid-auto-flow: column; grid-auto-columns: 14px; gap: 3px;
+    }
+    .heatmap-cell {
+      width: 12px; height: 12px; border-radius: 2px;
+      background: rgba(255,255,255,0.05); transition: background var(--fast);
+    }
+    .heatmap-cell.lvl-1 { background: rgba(16,185,129,0.25); }
+    .heatmap-cell.lvl-2 { background: rgba(16,185,129,0.45); }
+    .heatmap-cell.lvl-3 { background: rgba(16,185,129,0.65); }
+    .heatmap-cell.lvl-4 { background: rgba(16,185,129,0.9); }
+    .heatmap-legend {
+      display: flex; align-items: center; gap: 0.3rem;
+      margin-top: 0.5rem; font-size: 0.7rem; color: var(--tx-3);
+    }
+    .heatmap-legend-cell { width: 12px; height: 12px; border-radius: 2px; }
+
+    /* Break Reminder */
+    .break-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center;
+      z-index: 150; opacity: 0; pointer-events: none; transition: opacity var(--med);
+    }
+    .break-overlay.open { opacity: 1; pointer-events: all; }
+    .break-card {
+      background: var(--bg-raised); border: 1px solid var(--border-mid);
+      border-radius: var(--radius-xl); padding: 2rem; text-align: center;
+      max-width: 380px; width: 100%; transform: scale(0.95);
+      transition: transform var(--med) var(--ease);
+    }
+    .break-overlay.open .break-card { transform: scale(1); }
+    .break-icon { font-size: 3rem; margin-bottom: 0.8rem; }
+    .break-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.2rem; margin-bottom: 0.4rem; }
+    .break-desc { font-size: 0.85rem; color: var(--tx-2); margin-bottom: 1.2rem; }
+    .break-timer {
+      font-family: 'DM Mono', monospace; font-size: 2rem; font-weight: 500;
+      color: var(--clr-analytics); margin-bottom: 1rem;
+    }
+    .break-btns { display: flex; gap: 0.6rem; justify-content: center; }
+
+    /* Chart */
+    .chart-container { position: relative; width: 100%; max-height: 300px; }
+    .chart-container canvas { width: 100% !important; max-height: 300px; }
+
+    /* Streak */
+    .streak-card {
+      background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(239,68,68,0.06));
+      border: 1px solid rgba(245,158,11,0.25);
+    }
+    .streak-fire { font-size: 1.6rem; }
+    .streak-num { font-family: 'DM Mono', monospace; font-size: 2rem; font-weight: 500; color: var(--tx-1); }
+    .streak-label { font-size: 0.74rem; color: var(--tx-2); }
+
+    /* Daily Goal */
+    .daily-goal-card {
+      background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(14,165,233,0.06));
+      border: 1px solid rgba(16,185,129,0.25);
+    }
+    .goal-ring {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: conic-gradient(var(--clr-analytics) var(--goal-pct, 0%), rgba(255,255,255,0.07) 0%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .goal-ring-inner {
+      width: 48px; height: 48px; border-radius: 50%; background: var(--bg-card);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Mono', monospace; font-size: 0.8rem; font-weight: 500; color: var(--tx-1);
+    }
+
+    /* Toast notifications */
+    .toast-container {
+      position: fixed; top: 1rem; right: 1rem; z-index: 200;
+      display: flex; flex-direction: column; gap: 0.5rem;
+      pointer-events: none;
+    }
+    .toast {
+      pointer-events: all;
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.7rem 1rem; border-radius: 8px;
+      background: var(--bg-raised); border: 1px solid var(--border-mid);
+      color: var(--tx-1); font-size: 0.84rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+      transform: translateX(120%);
+      animation: toastIn 0.3s var(--ease) forwards;
+      max-width: 360px;
+    }
+    .toast.removing { animation: toastOut 0.25s var(--ease) forwards; }
+    .toast-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .toast-msg { flex: 1; line-height: 1.4; }
+    .toast-close {
+      background: none; border: none; color: var(--tx-3); cursor: pointer;
+      font-size: 0.9rem; padding: 0.2rem; flex-shrink: 0;
+    }
+    .toast-close:hover { color: var(--tx-1); }
+    .toast.success { border-color: rgba(16,185,129,0.4); }
+    .toast.error   { border-color: rgba(239,68,68,0.4); }
+    .toast.info    { border-color: rgba(14,165,233,0.4); }
+    .toast.warning { border-color: rgba(245,158,11,0.4); }
+    @keyframes toastIn  { to { transform: translateX(0); } }
+    @keyframes toastOut { to { transform: translateX(120%); opacity: 0; } }
+
+  </style>
+</head>
+<body class="theme-dark">
+
+<div class="toast-container" id="toast-container"></div>
+
+<div class="break-overlay" id="break-overlay">
+  <div class="break-card">
+    <div class="break-icon">☕</div>
+    <div class="break-title">Time for a break!</div>
+    <div class="break-desc" id="break-desc">Take a short break to recharge.</div>
+    <div class="break-timer" id="break-timer">5:00</div>
+    <div class="break-btns">
+      <button class="btn btn-ghost btn-sm" id="btn-skip-break">Skip</button>
+      <button class="btn btn-primary btn-sm" id="btn-start-break">Start Break</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ LOGIN MODAL ═══════════════════════════ -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal-box">
+    <div class="modal-logo">
+      <img class="brand-orb" src="/logo.svg" alt="AI Scholar logo" style="width:28px;height:28px">
+      <span>AI Scholar</span>
+    </div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-title">Welcome back</h2>
+      <button class="icon-btn" id="modal-close-btn" title="Close">✕</button>
+    </div>
+    <div class="modal-form" id="auth-form">
+      <div class="form-group">
+        <label class="form-label" for="auth-email">Email address</label>
+        <input class="form-input" id="auth-email" type="email" placeholder="you@example.com" autocomplete="email">
+        <span class="field-error" id="email-error" role="alert"></span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="auth-password">Password</label>
+        <input class="form-input" id="auth-password" type="password" placeholder="••••••••" autocomplete="current-password">
+        <span class="field-error" id="password-error" role="alert"></span>
+      </div>
+      <div class="form-group hidden" id="confirm-password-field">
+        <label class="form-label" for="auth-confirm-password">Confirm Password</label>
+        <input class="form-input" id="auth-confirm-password" type="password" placeholder="••••••••" autocomplete="new-password">
+        <span class="field-error" id="confirm-password-error" role="alert"></span>
+      </div>
+      <div class="auth-error" id="auth-error"></div>
+      <button class="btn btn-primary btn-full" id="auth-submit-btn">Log in</button>
+      <p class="auth-toggle-text">
+        <span id="auth-toggle-msg">New here?</span>
+        <button class="auth-toggle-link" id="auth-toggle-btn">Create an account</button>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ APP SHELL ═════════════════════════════ -->
+<div class="app-shell">
+
+  <!-- ── Sidebar Backdrop (mobile) ───────────────── -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <!-- ── Sidebar ──────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img class="brand-orb" src="/logo.svg" alt="AI Scholar logo">
+      <div>
+        <div class="brand-name">AI Scholar</div>
+        <div class="brand-tagline">Study planner</div>
+      </div>
+    </div>
+
+    <div class="nav-section-label">Main</div>
+    <button class="nav-btn active" data-view="dashboard">
+      <div class="nav-icon">⚡</div> Dashboard
+    </button>
+    <button class="nav-btn" data-view="plans">
+      <div class="nav-icon">📋</div> Study Plans
+    </button>
+    <button class="nav-btn" data-view="analytics">
+      <div class="nav-icon">📊</div> Analytics
+    </button>
+
+    <div class="nav-section-label">Learn</div>
+    <button class="nav-btn" data-view="courses">
+      <div class="nav-icon">🎓</div> Courses
+    </button>
+    <button class="nav-btn" data-view="resources">
+      <div class="nav-icon">📚</div> Resources
+    </button>
+    <button class="nav-btn" data-view="generator">
+      <div class="nav-icon">✨</div> Plan Generator
+    </button>
+    <button class="nav-btn" data-view="chat">
+      <div class="nav-icon">💬</div> AI Chat
+    </button>
+
+    <div class="nav-section-label">Account</div>
+    <button class="nav-btn" data-view="profile">
+      <div class="nav-icon">👤</div> Profile
+    </button>
+    <button class="nav-btn" data-view="settings">
+      <div class="nav-icon">⚙️</div> Settings
+    </button>
+
+    <div class="sidebar-footer">
+      <button class="btn btn-ghost btn-sm fw" id="btn-back-to-landing">← Back to home</button>
+    </div>
+  </aside>
+
+  <!-- ── Main area ─────────────────────────────────── -->
+  <div class="app-main">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <button class="icon-btn" id="btn-sidebar-toggle">☰</button>
+        <div>
+          <div class="header-greeting" id="header-greeting">Hi, Scholar 👋</div>
+          <div class="header-subtitle">Your focused study hub, powered by AI</div>
+        </div>
+      </div>
+      <div class="header-pills">
+        <div class="hpill"><div class="hpill-dot" style="--dot-clr:#6c63ff"></div><span id="hpill-today">0.0 h today</span></div>
+        <div class="hpill"><div class="hpill-dot" style="--dot-clr:#10b981"></div><span id="hpill-total">0.0 h total</span></div>
+        <div class="hpill" id="hpill-auth-chip">Guest</div>
+        <button class="icon-btn" id="btn-theme-toggle" title="Toggle theme">🌙</button>
+        <button class="btn btn-ghost btn-sm" id="btn-open-login">Log in</button>
+        <button class="btn btn-danger btn-sm hidden" id="btn-logout">Log out</button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="app-content">
+
+      <!-- ══════════════ DASHBOARD ══════════════════════════ -->
+      <section class="view-panel active" id="view-dashboard">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">
+              <div class="section-dot" style="--accent:var(--clr-dash)"></div>
+              <span class="section-label">Overview</span>
+            </div>
+            <h1 class="section-title">Dashboard</h1>
+            <p class="section-desc">Your daily focus at a glance — sessions, timers, and quick stats.</p>
+          </div>
+        </div>
+
+        <!-- Stat row -->
+        <div class="grid-3" style="margin-bottom:1.2rem">
+          <div class="stat-card" style="--accent-soft:var(--clr-dash-soft)">
+            <div class="stat-label">Active Plans</div>
+            <div class="stat-value" id="dash-active-plans">0</div>
+            <div class="stat-sub">Plans currently tracked</div>
+          </div>
+          <div class="stat-card" style="--accent-soft:var(--clr-plans-soft)">
+            <div class="stat-label">Today's Focus</div>
+            <div class="stat-value" id="dash-today-hours">0.0 h</div>
+            <div class="stat-badge">▲ On track</div>
+          </div>
+          <div class="stat-card" style="--accent-soft:var(--clr-analytics-soft)">
+            <div class="stat-label">Last 7 Days</div>
+            <div class="stat-value" id="dash-week-hours">0.0 h</div>
+            <div class="stat-sub">Total focused time</div>
+          </div>
+        </div>
+
+        <!-- Streak & Daily Goal -->
+        <div style="display:flex;gap:1.2rem;margin-bottom:1.2rem;flex-wrap:wrap">
+          <div class="stat-card streak-card" style="flex:1;min-width:140px">
+            <div class="streak-fire">🔥</div>
+            <div class="streak-num" id="dash-streak">0</div>
+            <div class="streak-label">Day Streak</div>
+          </div>
+          <div class="stat-card daily-goal-card" style="flex:1;min-width:140px">
+            <div class="stat-label">Daily Goal</div>
+            <div style="display:flex;align-items:center;gap:0.8rem;margin-top:0.4rem">
+              <div class="goal-ring" id="dash-goal-ring">
+                <div class="goal-ring-inner" id="dash-goal-pct">0%</div>
+              </div>
+              <div>
+                <div class="stat-sub" id="dash-goal-text">0 / 2h today</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timer + Sessions -->
+        <div class="grid-2-1">
+          <div class="timer-wrapper">
+            <div class="card-title" style="color:var(--clr-dash);align-self:flex-start">
+              <div class="card-title-dot" style="background:var(--clr-dash)"></div>
+              Focus Timer
+            </div>
+            <select class="timer-select" id="timer-plan-select">
+              <option value="">Select a plan to focus on</option>
+            </select>
+            <div class="timer-ring">
+              <svg viewBox="0 0 150 150" width="150" height="150">
+                <circle cx="75" cy="75" r="64" stroke="rgba(255,255,255,0.07)" stroke-width="6" fill="none"/>
+                <circle cx="75" cy="75" r="64" stroke="url(#tg)" stroke-width="6" fill="none"
+                  stroke-dasharray="402" stroke-dashoffset="0" stroke-linecap="round"
+                  transform="rotate(-90 75 75)" id="timer-progress"/>
+                <defs>
+                  <linearGradient id="tg" x1="0" y1="0" x2="150" y2="150" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#6c63ff"/>
+                    <stop offset="1" stop-color="#0ea5e9"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="timer-num" id="timer-value">25:00</div>
+            </div>
+            <div class="timer-btns">
+              <button class="btn btn-primary" id="timer-start">▶ Start</button>
+              <button class="btn btn-ghost" id="timer-pause">⏸ Pause</button>
+              <button class="btn btn-ghost" id="timer-reset">↺ Reset</button>
+            </div>
+            <div class="timer-presets">
+              <button class="preset-chip active" data-minutes="25">25 min</button>
+              <button class="preset-chip" data-minutes="50">50 min</button>
+              <button class="preset-chip" data-minutes="90">90 min</button>
+            </div>
+            <p style="font-size:0.76rem;color:var(--tx-3);text-align:center">Sessions auto-log to selected plan on completion</p>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><div class="card-title-dot"></div>Recent Sessions</div>
+            <div class="session-list" id="session-list">
+              <div class="empty-state">
+                <div class="empty-icon">⏱</div>
+                <h3>No sessions yet</h3>
+                <p>Start the timer to log your first block</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════ STUDY PLANS ════════════════════════ -->
+      <section class="view-panel" id="view-plans">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">
+              <div class="section-dot" style="--accent:var(--clr-plans)"></div>
+              <span class="section-label">Planning</span>
+            </div>
+            <h1 class="section-title">Study Plans</h1>
+            <p class="section-desc">Create and manage your study goals. Track progress in focused sessions.</p>
+          </div>
+          <button class="btn btn-accent" style="--accent:var(--clr-plans)" id="btn-open-plan-form">+ New Plan</button>
+        </div>
+
+        <div class="plan-form-card" id="plan-form-card">
+          <div class="card-title"><div class="card-title-dot" style="background:var(--clr-plans)"></div>Create / Edit Plan</div>
+          <form id="plan-form">
+            <div class="form-grid">
+              <div class="form-group form-input-full">
+                <label class="form-label" for="plan-title">Topic / Plan Title</label>
+                <input class="form-input" id="plan-title" name="title" type="text" placeholder="e.g. Mastering Machine Learning" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="plan-goal-hours">Target Hours</label>
+                <input class="form-input" id="plan-goal-hours" name="goalHours" type="number" min="1" max="300" placeholder="e.g. 20" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="plan-difficulty">Difficulty</label>
+                <select class="form-select" id="plan-difficulty" name="difficulty">
+                  <option value="easy">Easy</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex gap-1 items-center mt-2">
+              <button type="submit" class="btn btn-accent" style="--accent:var(--clr-plans)">Save Plan</button>
+              <button type="button" class="btn btn-ghost" id="btn-ai-suggest">⚙ AI Suggest Goal</button>
+              <span style="font-size:0.75rem;color:var(--tx-3)">AI estimates realistic hours for your topic</span>
+            </div>
+          </form>
+        </div>
+
+        <div class="plan-list mt-2" id="plan-list">
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3>No plans yet</h3>
+            <p>Create your first study plan above</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════ ANALYTICS ══════════════════════════ -->
+      <section class="view-panel" id="view-analytics">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">
+              <div class="section-dot" style="--accent:var(--clr-analytics)"></div>
+              <span class="section-label">Insights</span>
+            </div>
+            <h1 class="section-title">Analytics</h1>
+            <p class="section-desc">Study performance visualized across all your plans and sessions.</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="exportAnalyticsPDF()">Export PDF ↓</button>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:1.2rem">
+          <div class="stat-card" style="--accent-soft:var(--clr-analytics-soft)">
+            <div class="stat-label">Total Focus Time</div>
+            <div class="stat-value" id="analytics-total">0.0 h</div>
+            <div class="stat-sub">Across all plans</div>
+          </div>
+          <div class="stat-card" style="--accent-soft:var(--clr-plans-soft)">
+            <div class="stat-label">Most Focused Plan</div>
+            <div class="stat-value" style="font-size:1.1rem;line-height:1.4" id="analytics-most-focused">–</div>
+            <div class="stat-sub">Highest session count</div>
+          </div>
+        </div>
+
+        <!-- Heatmap -->
+        <div class="card" style="margin-bottom:1.2rem">
+          <div class="card-title"><div class="card-title-dot" style="background:var(--clr-analytics)"></div>Activity Heatmap</div>
+          <div class="heatmap-wrap">
+            <div class="heatmap-grid" id="heatmap-grid"></div>
+            <div class="heatmap-legend">
+              <span>Less</span>
+              <div class="heatmap-legend-cell" style="background:rgba(255,255,255,0.05)"></div>
+              <div class="heatmap-legend-cell" style="background:rgba(16,185,129,0.25)"></div>
+              <div class="heatmap-legend-cell" style="background:rgba(16,185,129,0.45)"></div>
+              <div class="heatmap-legend-cell" style="background:rgba(16,185,129,0.65)"></div>
+              <div class="heatmap-legend-cell" style="background:rgba(16,185,129,0.9)"></div>
+              <span>More</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title"><div class="card-title-dot" style="background:var(--clr-analytics)"></div>Progress by Plan</div>
+            <div class="chart-container"><canvas id="chart-progress"></canvas></div>
+            <div class="analytics-bar-chart" id="analytics-bars">
+              <div class="empty-state" style="padding:1.5rem">
+                <p>No data yet — complete some sessions!</p>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><div class="card-title-dot" style="background:var(--clr-analytics)"></div>Detailed Breakdown</div>
+            <div class="analytics-table-wrap">
+              <table class="analytics-table" id="analytics-table">
+                <thead>
+                  <tr><th>Plan</th><th>Goal</th><th>Focused</th><th>% Done</th></tr>
+                </thead>
+                <tbody id="analytics-tbody">
+                  <tr><td colspan="4" style="color:var(--tx-3);text-align:center;padding:1.5rem">No sessions logged yet</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════ COURSES ═════════════════════════════ -->
+      <section class="view-panel" id="view-courses">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">
+              <div class="section-dot" style="--accent:var(--clr-courses)"></div>
+              <span class="section-label">Learning Paths</span>
+            </div>
+            <h1 class="section-title">Courses</h1>
+            <p class="section-desc">Explore curated learning tracks and add them directly as study plans.</p>
+          </div>
+        </div>
+
+        <div class="courses-grid">
+          <div class="course-card">
+            <div class="course-icon">🤖</div>
+            <span class="course-tag">AI / ML</span>
+            <div class="course-name">Machine Learning Foundations</div>
+            <div class="course-desc">Build a strong ML base with hands-on projects, covering supervised/unsupervised learning, neural nets, and model evaluation.</div>
+            <button class="btn btn-ghost btn-sm" onclick="addCourseAsPlan('Machine Learning Foundations', 40, 'hard')">+ Add as Plan</button>
+          </div>
+          <div class="course-card">
+            <div class="course-icon">🏗</div>
+            <span class="course-tag">Backend</span>
+            <div class="course-name">System Design Deep Dive</div>
+            <div class="course-desc">Master load balancing, caching strategies, distributed databases, and architectural trade-offs for large-scale systems.</div>
+            <button class="btn btn-ghost btn-sm" onclick="addCourseAsPlan('System Design Deep Dive', 30, 'hard')">+ Add as Plan</button>
+          </div>
+          <div class="course-card">
+            <div class="course-icon">🧮</div>
+            <span class="course-tag">CS Fundamentals</span>
+            <div class="course-name">DSA Grind Path</div>
+            <div class="course-desc">Turn your DSA practice into structured, trackable blocks — arrays, trees, graphs, DP and beyond with increasing difficulty.</div>
+            <button class="btn btn-ghost btn-sm" onclick="addCourseAsPlan('DSA Grind Path', 60, 'hard')">+ Add as Plan</button>
+          </div>
+          <div class="course-card">
+            <div class="course-icon">🌐</div>
+            <span class="course-tag">Frontend</span>
+            <div class="course-name">Modern Web Development</div>
+            <div class="course-desc">React, TypeScript, and modern CSS in real-world projects. Component design, state management, and performance tuning.</div>
+            <button class="btn btn-ghost btn-sm" onclick="addCourseAsPlan('Modern Web Development', 35, 'medium')">+ Add as Plan</button>
+          </div>
+          <div class="course-card">
+            <div class="course-icon">🔐</div>
+            <span class="course-tag">Security</span>
+            <div class="course-name">Cybersecurity Essentials</div>
+            <div class="course-desc">From OWASP to penetration testing basics. Understand vulnerabilities, secure coding practices, and network security.</div>
+            <button class="btn btn-ghost btn-sm" onclick="addCourseAsPlan('Cybersecurity Essentials', 25, 'medium')">+ Add as Plan</button>
+          </div>
+          <div class="course-card">
+            <div class="course-icon">☁️</div>
+            <span class="course-tag">Cloud</span>
+            <div class="course-name">Cloud & DevOps Fundamentals</div>
+            <div class="course-desc">AWS / GCP / Azure core services, CI/CD pipelines, Docker, Kubernetes and infrastructure-as-code with Terraform.</div>
+            <button class="btn btn-ghost btn-sm" onclick="addCourseAsPlan('Cloud & DevOps Fundamentals', 28, 'medium')">+ Add as Plan</button>
+          </div>
+        </div>
+
+        <div class="card mt-2">
+          <div class="card-title"><div class="card-title-dot" style="background:var(--clr-courses)"></div>Study Tips</div>
+          <div class="tips-grid">
+            <div class="tip-card"><div class="tip-icon">⏱</div><div class="tip-text">Use 25–50 minute focus blocks with 5–10 minute breaks to prevent mental fatigue and improve retention.</div></div>
+            <div class="tip-card"><div class="tip-icon">🔖</div><div class="tip-text">Tag difficult topics and allocate extra focus sessions. Don't rush past weak spots.</div></div>
+            <div class="tip-card"><div class="tip-icon">📈</div><div class="tip-text">Review your analytics weekly and adjust goal hours based on your actual pace.</div></div>
+            <div class="tip-card"><div class="tip-icon">🧠</div><div class="tip-text">Active recall beats passive re-reading. Test yourself after every study block for deeper learning.</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════ RESOURCES ═══════════════════════════ -->
+      <section class="view-panel" id="view-resources">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">
+              <div class="section-dot" style="--accent:var(--clr-courses)"></div>
+              <span class="section-label">Library</span>
+            </div>
+            <h1 class="section-title">Resources</h1>
+            <p class="section-desc">Curated links, books, and tools to accelerate your learning journey.</p>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title"><div class="card-title-dot" style="background:var(--clr-courses)"></div>🔗 Useful Links</div>
+            <div class="resource-list">
+              <a class="resource-item" href="https://developer.mozilla.org/" target="_blank" rel="noopener noreferrer"><div class="resource-icon">📖</div><div class="resource-body"><div class="resource-name">MDN Web Docs</div><div class="resource-meta">Complete web technology reference</div></div><span class="chip chip-blue">Free</span></a>
+              <a class="resource-item" href="https://www.khanacademy.org/" target="_blank" rel="noopener noreferrer"><div class="resource-icon">🎓</div><div class="resource-body"><div class="resource-name">Khan Academy</div><div class="resource-meta">Math, CS, and more — adaptive learning</div></div><span class="chip chip-blue">Free</span></a>
+              <a class="resource-item" href="https://www.fast.ai/" target="_blank" rel="noopener noreferrer"><div class="resource-icon">🤖</div><div class="resource-body"><div class="resource-name">fast.ai</div><div class="resource-meta">Practical deep learning for coders</div></div><span class="chip chip-blue">Free</span></a>
+              <a class="resource-item" href="https://leetcode.com/" target="_blank" rel="noopener noreferrer"><div class="resource-icon">💻</div><div class="resource-body"><div class="resource-name">LeetCode</div><div class="resource-meta">DSA practice with structured problem sets</div></div><span class="chip">Freemium</span></a>
+              <a class="resource-item" href="https://www.theodinproject.com/" target="_blank" rel="noopener noreferrer"><div class="resource-icon">📝</div><div class="resource-body"><div class="resource-name">The Odin Project</div><div class="resource-meta">Free full-stack web dev curriculum</div></div><span class="chip chip-blue">Free</span></a>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><div class="card-title-dot" style="background:var(--clr-courses)"></div>📚 Recommended Books</div>
+            <div class="resource-list">
+              <a class="resource-item" href="https://github.com/fluentpython" target="_blank" rel="noopener noreferrer"><div class="resource-icon">🐍</div><div class="resource-body"><div class="resource-name">Fluent Python</div><div class="resource-meta">Luciano Ramalho — Deep Python mastery</div></div></a>
+              <a class="resource-item" href="https://sarabander.github.io/sicp/" target="_blank" rel="noopener noreferrer"><div class="resource-icon">🧠</div><div class="resource-body"><div class="resource-name">SICP</div><div class="resource-meta">Structure and Interpretation of Computer Programs</div></div></a>
+              <a class="resource-item" href="https://dataintensive.net/" target="_blank" rel="noopener noreferrer"><div class="resource-icon">🏗</div><div class="resource-body"><div class="resource-name">Designing Data-Intensive Applications</div><div class="resource-meta">Martin Kleppmann — Distributed systems bible</div></div></a>
+              <a class="resource-item" href="https://www.deeplearningbook.org/" target="_blank" rel="noopener noreferrer"><div class="resource-icon">🤖</div><div class="resource-body"><div class="resource-name">Deep Learning (Goodfellow)</div><div class="resource-meta">The definitive ML textbook</div></div></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════ PLAN GENERATOR ═════════════════════ -->
+      <section class="view-panel" id="view-generator">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">
+              <div class="section-dot" style="--accent:var(--clr-generator)"></div>
+              <span class="section-label">AI Powered</span>
+            </div>
+            <h1 class="section-title">Plan Generator</h1>
+            <p class="section-desc">Describe what you want to learn. AI will craft a personalized study plan for you.</p>
+          </div>
+        </div>
+
+        <div class="generator-layout">
+          <div class="gen-form-wrap">
+            <div class="card-title" style="color:var(--clr-generator);margin-bottom:1.1rem"><div class="card-title-dot" style="background:var(--clr-generator)"></div>Configure your plan</div>
+            <div class="form-group" style="margin-bottom:0.8rem">
+              <label class="form-label" for="gen-topic">Topic or Subject</label>
+              <input class="form-input" id="gen-topic" placeholder="e.g. React, Machine Learning, System Design…">
+            </div>
+            <div class="form-grid" style="margin-bottom:0.8rem">
+              <div class="form-group">
+                <label class="form-label" for="gen-difficulty">Difficulty</label>
+                <select class="form-select" id="gen-difficulty">
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate" selected>Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="gen-sessions">Sessions per Week</label>
+                <input class="form-input" id="gen-sessions" type="number" min="1" max="21" value="5" placeholder="5">
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem">
+              <label class="form-label" for="gen-goal">Your Goal</label>
+              <input class="form-input" id="gen-goal" placeholder="e.g. Pass a certification, build a project…">
+            </div>
+            <button class="btn btn-full" style="background:linear-gradient(135deg,var(--clr-generator),#a855f7);color:#fff" id="btn-generate-plan">✨ Generate Plan</button>
+          </div>
+
+          <div class="gen-output">
+            <div class="card-title"><div class="card-title-dot" style="background:var(--clr-generator)"></div>Generated Plan</div>
+            <div id="generated-plan">
+              <div class="gen-placeholder">
+                <div class="big-icon">✨</div>
+                <p>Your AI-generated plan will appear here.</p>
+                <p style="font-size:0.74rem">Fill in the form and hit Generate Plan</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ══════════════ AI CHAT ════════════════════════════════ -->
+      <section class="view-panel" id="view-chat">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">
+              <div class="section-dot" style="--accent:var(--clr-chat)"></div>
+              <span class="section-label">AI Assistant</span>
+            </div>
+            <h1 class="section-title">AI Chat</h1>
+            <p class="section-desc">Ask anything — concepts, problems, study tips. Get instant AI-powered answers.</p>
+          </div>
+        </div>
+
+        <div class="botpress-chat-container">
+          <iframe
+            id="botpress-iframe"
+            src="https://cdn.botpress.cloud/webchat/v3.6/shareable.html?configUrl=https://files.bpcontent.cloud/2026/02/02/11/20260202111859-NPCCN8I9.json"
+            title="AI Study Assistant"
+            frameborder="0"
+            allow="microphone"
+          ></iframe>
+        </div>
+      </section>
+
+      <!-- ══════════════ PROFILE ════════════════════════════ -->
+      <section class="view-panel" id="view-profile">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">
+              <div class="section-dot" style="--accent:var(--clr-profile)"></div>
+              <span class="section-label">Account</span>
+            </div>
+            <h1 class="section-title">Profile</h1>
+            <p class="section-desc">Personalize your AI Scholar experience.</p>
+          </div>
+        </div>
+
+        <div class="profile-layout">
+          <div class="profile-avatar-card">
+            <div class="avatar-ring">🎓</div>
+            <div class="avatar-name" id="profile-name">Scholar</div>
+            <div class="avatar-email" id="profile-email">Not logged in</div>
+            <div class="avatar-badge">✦ AI Scholar</div>
+            <div style="font-size:0.78rem;color:var(--tx-3);margin-top:0.5rem">Member since 2024</div>
+          </div>
+
+          <div class="settings-sections">
+            <div class="settings-group">
+              <div class="settings-group-label">Identity</div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-key">Display Name</div>
+                  <div class="settings-desc">How you'll be greeted in the app</div>
+                </div>
+                <div class="settings-ctrl">
+                  <input class="form-input" id="user-name" type="text" placeholder="Your name" style="width:160px">
+                </div>
+              </div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-key">Email</div>
+                  <div class="settings-desc">Your account email address</div>
+                </div>
+                <div class="settings-ctrl" id="profile-email-ctrl" style="font-size:0.82rem;color:var(--tx-2)">—</div>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <div class="settings-group-label">Appearance</div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-key">Theme</div>
+                  <div class="settings-desc">Light, Dark, or High Contrast</div>
+                </div>
+                <div class="settings-ctrl">
+                  <select class="form-select" id="user-theme" style="width:150px">
+                    <option value="dark">Dark (default)</option>
+                    <option value="light">Light</option>
+                    <option value="high-contrast">High Contrast</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <div class="settings-group-label">Productivity</div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-key">Daily Goal (hours)</div>
+                  <div class="settings-desc">How many hours you want to focus each day</div>
+                </div>
+                <div class="settings-ctrl">
+                  <input class="form-input" id="user-daily-goal" type="number" min="0.5" max="16" step="0.5" value="2" style="width:80px">
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-accent" style="--accent:var(--clr-profile);align-self:flex-start" id="btn-save-settings">Save changes</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════ SETTINGS ════════════════════════════ -->
+      <section class="view-panel" id="view-settings">
+        <div class="section-head">
+          <div>
+            <div class="section-eyebrow">
+              <div class="section-dot" style="--accent:var(--clr-profile)"></div>
+              <span class="section-label">Preferences</span>
+            </div>
+            <h1 class="section-title">Settings</h1>
+            <p class="section-desc">Control how AI Scholar behaves and notifies you.</p>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="settings-group card">
+            <div class="settings-group-label">Notifications</div>
+            <div class="settings-row">
+              <div><div class="settings-key">Session reminders</div><div class="settings-desc">Remind me to study at scheduled times</div></div>
+              <div class="toggle on settings-ctrl" id="toggle-reminders"></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-key">Timer sound alerts</div><div class="settings-desc">Play a sound when a session completes</div></div>
+              <div class="toggle on settings-ctrl" id="toggle-sound"></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-key">Weekly summary email</div><div class="settings-desc">Get a weekly progress digest</div></div>
+              <div class="toggle settings-ctrl" id="toggle-email"></div>
+            </div>
+          </div>
+
+          <div class="settings-group card">
+            <div class="settings-group-label">Timer Defaults</div>
+            <div class="settings-row">
+              <div><div class="settings-key">Default duration</div><div class="settings-desc">Session length when you start a timer</div></div>
+              <div class="settings-ctrl">
+                <select class="form-select" style="width:110px" id="setting-default-timer">
+                  <option value="25">25 min</option>
+                  <option value="50">50 min</option>
+                  <option value="90">90 min</option>
+                </select>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-key">Auto-start next session</div><div class="settings-desc">Begin a new timer block automatically</div></div>
+              <div class="toggle settings-ctrl" id="toggle-autostart"></div>
+            </div>
+          </div>
+
+          <div class="settings-group card">
+            <div class="settings-group-label">Data</div>
+            <div class="settings-row">
+              <div><div class="settings-key">Export data</div><div class="settings-desc">Download all your plans and sessions as JSON</div></div>
+              <div class="settings-ctrl"><button class="btn btn-ghost btn-sm" id="btn-export">Export ↓</button></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-key">Clear all data</div><div class="settings-desc" style="color:#fca5a5">Permanently delete sessions and plans</div></div>
+              <div class="settings-ctrl"><button class="btn btn-danger btn-sm" id="btn-clear-data">Clear data</button></div>
+            </div>
+          </div>
+
+          <div class="settings-group card">
+            <div class="settings-group-label">Account</div>
+            <div class="settings-row">
+              <div><div class="settings-key">App version</div><div class="settings-desc">AI Scholar v2.0.0</div></div>
+              <div class="settings-ctrl"><span class="chip chip-green">Latest</span></div>
+            </div>
+            <div class="settings-row">
+              <div><div class="settings-key">Log out</div><div class="settings-desc">Sign out of your account</div></div>
+              <div class="settings-ctrl"><button class="btn btn-ghost btn-sm" id="btn-settings-logout">Log out</button></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- end .app-content -->
+  </div><!-- end .app-main -->
+</div><!-- end .app-shell -->
+
+<script type="module">
+  // ── Imports from original api.js ──────────────────────────────
+  const API_BASE = '';
+  const TOKEN_KEY = 'ai-scholar-token';
+  const SETTINGS_KEY = 'ai-scholar-settings';
+
+  function getToken() { return localStorage.getItem(TOKEN_KEY) || null; }
+  function setToken(t) { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); }
+  function isAuthenticated() { return !!getToken(); }
+
+  async function apiRequest(path, options = {}) {
+    const headers = { 'Content-Type': 'application/json', ...(options.headers||{}) };
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    let res;
+    try {
+      res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    } catch(networkErr) {
+      throw new Error('__NO_SERVER__');
+    }
+    if (res.status === 404 || res.status === 0) throw new Error('__NO_SERVER__');
+    if (!res.ok) {
+      let msg = `Request failed (${res.status})`;
+      try { const d = await res.json(); if (d.message) msg = d.message; } catch(_){}
+      throw new Error(msg);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  async function loginUser({email, password}) { return apiRequest('/api/auth/login',   {method:'POST', body:JSON.stringify({email,password})}); }
+  async function registerUser({email,password}) { return apiRequest('/api/auth/register',{method:'POST', body:JSON.stringify({email,password})}); }
+  async function fetchPlans()              { return apiRequest('/api/plans'); }
+  async function createPlan(p)             { return apiRequest('/api/plans',    {method:'POST', body:JSON.stringify(p)}); }
+  async function updatePlan(id, p)         { return apiRequest(`/api/plans/${id}`, {method:'PUT',  body:JSON.stringify(p)}); }
+  async function deletePlan(id)            { return apiRequest(`/api/plans/${id}`, {method:'DELETE'}); }
+  async function fetchSessions()           { return apiRequest('/api/sessions'); }
+  async function createSession(p)          { return apiRequest('/api/sessions', {method:'POST', body:JSON.stringify(p)}); }
+  async function aiSuggestGoal(p)          { return apiRequest('/api/ai/suggest',{method:'POST', body:JSON.stringify(p)}); }
+  async function aiGeneratePlan(p)         { return apiRequest('/api/ai/generate',{method:'POST',body:JSON.stringify(p)}); }
+
+  // ── State ─────────────────────────────────────────────────────
+  let plans = [], sessions = [], sessionTotals = {}, todayH = 0, totalH = 0, weekH = 0, mostFocusedId = null;
+  let editingPlanId = null;
+  let timerInterval = null, timerSeconds = 25*60, timerRunning = false, timerTotal = 25*60;
+  let authMode = 'login';
+
+  // ── Break Reminder ────────────────────────────────────────────
+  let breakTimerInterval = null;
+  let breakSeconds = 0;
+
+  function showBreakReminder() {
+    const sessionCount = sessions.length;
+    const isLong = sessionCount > 0 && sessionCount % 4 === 0;
+    const mins = isLong ? 15 : 5;
+    breakSeconds = mins * 60;
+    document.getElementById('break-desc').textContent = isLong
+      ? "You've completed 4 sessions! Take a longer break."
+      : "Great focus session! Take a short break.";
+    updateBreakTimerDisplay();
+    document.getElementById('break-overlay').classList.add('open');
+  }
+
+  function updateBreakTimerDisplay() {
+    const m = Math.floor(breakSeconds / 60), s = breakSeconds % 60;
+    document.getElementById('break-timer').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  document.getElementById('btn-skip-break').addEventListener('click', () => {
+    clearInterval(breakTimerInterval);
+    document.getElementById('break-overlay').classList.remove('open');
+  });
+
+  document.getElementById('btn-start-break').addEventListener('click', () => {
+    document.getElementById('btn-start-break').disabled = true;
+    breakTimerInterval = setInterval(() => {
+      breakSeconds--;
+      if (breakSeconds <= 0) {
+        clearInterval(breakTimerInterval);
+        document.getElementById('break-overlay').classList.remove('open');
+        document.getElementById('btn-start-break').disabled = false;
+        showToast('Break over! Ready for the next session?', 'success');
+        return;
+      }
+      updateBreakTimerDisplay();
+    }, 1000);
+  });
+
+  // ── PDF Export ─────────────────────────────────────────────────
+  window.exportAnalyticsPDF = function() {
+    const el = document.getElementById('view-analytics');
+    if (!el) return;
+    showToast('Generating PDF…', 'info', 2000);
+    const opt = {
+      margin: 0.5, filename: 'ai-scholar-analytics.pdf',
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, backgroundColor: '#0b0d14' },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+    };
+    html2pdf().set(opt).from(el).save().then(() => showToast('PDF exported!', 'success')).catch(() => showToast('PDF export failed', 'error'));
+  };
+
+  // ── Chart.js ──────────────────────────────────────────────────
+  let progressChart = null;
+  function renderProgressChart() {
+    const canvas = document.getElementById('chart-progress');
+    if (!canvas || !plans.length) return;
+    const labels = plans.map(p => p.title.length > 18 ? p.title.slice(0,18)+'…' : p.title);
+    const goalData = plans.map(p => p.goalHours);
+    const doneData = plans.map(p => sessionTotals[p.id] || 0);
+
+    if (progressChart) progressChart.destroy();
+    progressChart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Goal (h)', data: goalData, backgroundColor: 'rgba(14,165,233,0.3)', borderColor: 'rgba(14,165,233,0.8)', borderWidth: 1 },
+          { label: 'Done (h)', data: doneData, backgroundColor: 'rgba(16,185,129,0.5)', borderColor: 'rgba(16,185,129,0.9)', borderWidth: 1 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#9da3bb', font: { size: 11 } } } },
+        scales: {
+          x: { ticks: { color: '#5d647e', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { ticks: { color: '#5d647e' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+        }
+      }
+    });
+  }
+
+  // ── Heatmap ───────────────────────────────────────────────────
+  function renderHeatmap() {
+    const grid = document.getElementById('heatmap-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - 83);
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+
+    const hoursByDay = {};
+    sessions.forEach(s => {
+      const key = new Date(s.loggedAt).toDateString();
+      hoursByDay[key] = (hoursByDay[key] || 0) + s.durationSeconds / 3600;
+    });
+
+    const d = new Date(startDate);
+    while (d <= now) {
+      const cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      const h = hoursByDay[d.toDateString()] || 0;
+      if (h > 0 && h < 0.5) cell.classList.add('lvl-1');
+      else if (h >= 0.5 && h < 1.5) cell.classList.add('lvl-2');
+      else if (h >= 1.5 && h < 3) cell.classList.add('lvl-3');
+      else if (h >= 3) cell.classList.add('lvl-4');
+      cell.title = `${d.toLocaleDateString()}: ${h.toFixed(1)}h`;
+      grid.appendChild(cell);
+      d.setDate(d.getDate() + 1);
+    }
+  }
+
+  // ── Streak Tracking ───────────────────────────────────────────
+  function computeStreak() {
+    if (!sessions.length) return 0;
+    const days = new Set(sessions.map(s => new Date(s.loggedAt).toDateString()));
+    let streak = 0;
+    const d = new Date();
+    if (!days.has(d.toDateString())) d.setDate(d.getDate() - 1);
+    while (days.has(d.toDateString())) { streak++; d.setDate(d.getDate() - 1); }
+    return streak;
+  }
+
+  // ── Toast Notifications ───────────────────────────────────────
+  function showToast(msg, type = 'info', duration = 3500) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+    toast.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ️'}</span><span class="toast-msg">${msg}</span><button class="toast-close" onclick="this.closest('.toast').remove()">×</button>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.classList.add('removing'); setTimeout(() => toast.remove(), 250); }, duration);
+  }
+
+  // ── DOM refs ──────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const $$ = id => document.getElementById(id);
+  const navBtns = document.querySelectorAll('.nav-btn');
+  const viewPanels = document.querySelectorAll('.view-panel');
+  const loginModal = $('login-modal');
+
+  // ── Navigation ────────────────────────────────────────────────
+  function setView(name) {
+    viewPanels.forEach(p => p.classList.remove('active'));
+    const panel = $(`view-${name}`);
+    if (panel) panel.classList.add('active');
+    navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === name));
+    window.scrollTo(0,0);
+  }
+
+  navBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      setView(btn.dataset.view);
+      // Close sidebar on mobile after nav selection
+      if (window.innerWidth <= 900) closeSidebar();
+    });
+  });
+
+  const sidebarEl   = document.getElementById('sidebar');
+  const backdropEl  = document.getElementById('sidebar-backdrop');
+
+  function openSidebar()  { sidebarEl.classList.add('open');    backdropEl.classList.add('visible'); }
+  function closeSidebar() { sidebarEl.classList.remove('open'); backdropEl.classList.remove('visible'); }
+  function toggleSidebar(){ sidebarEl.classList.contains('open') ? closeSidebar() : openSidebar(); }
+
+  $('btn-sidebar-toggle').addEventListener('click', toggleSidebar);
+  backdropEl.addEventListener('click', closeSidebar);
+
+  $('btn-back-to-landing')?.addEventListener('click', () => { window.location.href='/'; });
+
+  // ── Theme ─────────────────────────────────────────────────────
+  function applyTheme(t) {
+    document.body.className = '';
+    document.body.classList.add(t === 'light' ? 'theme-light' : t === 'high-contrast' ? 'theme-high-contrast' : 'theme-dark');
+    $('btn-theme-toggle').textContent = t === 'light' ? '🌙' : '☀️';
+  }
+
+  $('btn-theme-toggle').addEventListener('click', () => {
+    const cur = document.body.classList.contains('theme-light') ? 'light' : 'dark';
+    applyTheme(cur === 'dark' ? 'light' : 'dark');
+  });
+
+  // ── Settings ──────────────────────────────────────────────────
+  function loadSettings() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');
+      if (s.name) { $('user-name').value = s.name; updateGreeting(s.name); }
+      if (s.theme) { $('user-theme').value = s.theme; applyTheme(s.theme); } else applyTheme('dark');
+      if (s.dailyGoal) $('user-daily-goal').value = s.dailyGoal;
+    } catch(e) { applyTheme('dark'); }
+  }
+
+  $('btn-save-settings').addEventListener('click', () => {
+    const name = $('user-name').value.trim();
+    const theme = $('user-theme').value;
+    const dailyGoal = Number($('user-daily-goal').value) || 2;
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({name, theme, dailyGoal}));
+    applyTheme(theme);
+    updateGreeting(name);
+    if($('profile-name')) $('profile-name').textContent = name || 'Scholar';
+    showToast('Settings saved!', 'success');
+    renderDashboard();
+  });
+
+  function updateGreeting(name) {
+    $('header-greeting').textContent = name ? `Hi, ${name} 👋` : 'Hi, Scholar 👋';
+    if($('profile-name')) $('profile-name').textContent = name || 'Scholar';
+  }
+
+  // ── Login Modal ───────────────────────────────────────────────
+  function openLoginModal(mode='login') {
+    authMode = mode;
+    $('auth-email').value = '';
+    $('auth-password').value = '';
+    if ($('auth-confirm-password')) $('auth-confirm-password').value = '';
+    updateModalUI();
+    loginModal.classList.add('open');
+    $('auth-email').focus();
+  }
+  function closeLoginModal() { loginModal.classList.remove('open'); }
+
+  function clearFieldErrors() {
+    ['email-error','password-error','confirm-password-error'].forEach(id => { $$(id).textContent = ''; });
+    [$('auth-email'), $('auth-password'), $('auth-confirm-password')].forEach(el => el?.classList.remove('input-invalid'));
+    $('auth-error').classList.remove('visible');
+    $('auth-error').innerHTML = '';
+  }
+
+  function setFieldError(inputId, errorId, msg) {
+    const input = $(inputId), errEl = $$(errorId);
+    errEl.textContent = msg;
+    input.classList.toggle('input-invalid', !!msg);
+  }
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function validateAuthForm() {
+    let valid = true;
+    const email = $('auth-email').value.trim();
+    const password = $('auth-password').value;
+    const confirm = $('auth-confirm-password')?.value ?? '';
+
+    if (!email) {
+      setFieldError('auth-email', 'email-error', 'Email is required.'); valid = false;
+    } else if (!isValidEmail(email)) {
+      setFieldError('auth-email', 'email-error', 'Please enter a valid email address.'); valid = false;
+    } else {
+      setFieldError('auth-email', 'email-error', '');
+    }
+
+    if (!password) {
+      setFieldError('auth-password', 'password-error', 'Password is required.'); valid = false;
+    } else if (authMode === 'register' && password.length < 8) {
+      setFieldError('auth-password', 'password-error', 'Password must be at least 8 characters.'); valid = false;
+    } else if (authMode === 'register' && !/[A-Z]/.test(password)) {
+      setFieldError('auth-password', 'password-error', 'Password must contain at least one uppercase letter.'); valid = false;
+    } else if (authMode === 'register' && !/[0-9]/.test(password)) {
+      setFieldError('auth-password', 'password-error', 'Password must contain at least one number.'); valid = false;
+    } else {
+      setFieldError('auth-password', 'password-error', '');
+    }
+
+    if (authMode === 'register') {
+      if (!confirm) {
+        setFieldError('auth-confirm-password', 'confirm-password-error', 'Please confirm your password.'); valid = false;
+      } else if (confirm !== password) {
+        setFieldError('auth-confirm-password', 'confirm-password-error', 'Passwords do not match.'); valid = false;
+      } else {
+        setFieldError('auth-confirm-password', 'confirm-password-error', '');
+      }
+    }
+
+    return valid;
+  }
+
+  function updateModalUI() {
+    const isLogin = authMode === 'login';
+    $('modal-title').textContent = isLogin ? 'Welcome back' : 'Create account';
+    $('auth-submit-btn').textContent = isLogin ? 'Log in' : 'Sign up';
+    $('auth-toggle-msg').textContent = isLogin ? 'New here?' : 'Already have an account?';
+    $('auth-toggle-btn').textContent = isLogin ? 'Create an account' : 'Log in instead';
+    $('confirm-password-field').classList.toggle('hidden', isLogin);
+    $('auth-password').setAttribute('autocomplete', isLogin ? 'current-password' : 'new-password');
+    clearFieldErrors();
+  }
+
+  $('btn-open-login').addEventListener('click', () => openLoginModal('login'));
+  $('modal-close-btn').addEventListener('click', closeLoginModal);
+  loginModal.addEventListener('click', e => { if (e.target === loginModal) closeLoginModal(); });
+  $('auth-toggle-btn').addEventListener('click', () => {
+    authMode = authMode === 'login' ? 'register' : 'login';
+    updateModalUI();
+  });
+
+  function showAuthError(msg) {
+    const errEl = $('auth-error');
+    errEl.innerHTML = msg;
+    errEl.classList.add('visible');
+  }
+
+  function showNoServerError() {
+    showAuthError(
+      '<strong style="display:block;margin-bottom:4px">Backend server is not running.</strong>' +
+      'Start the Node.js server to use a real account, or ' +
+      '<button onclick="window.enterGuestMode()" style="background:none;border:none;color:#a5b4fc;text-decoration:underline;cursor:pointer;font:inherit;padding:0">continue as Guest</button>' +
+      ' to explore the app offline.'
+    );
+  }
+
+  window.enterGuestMode = () => {
+    closeLoginModal();
+    $('hpill-auth-chip').textContent = '\u{1F464} Guest';
+    $('btn-open-login').classList.remove('hidden');
+    $('btn-logout').classList.add('hidden');
+  };
+
+  // ── Live blur validation ──────────────────────────────────────
+  $('auth-email').addEventListener('blur', () => {
+    const email = $('auth-email').value.trim();
+    if (!email) setFieldError('auth-email', 'email-error', 'Email is required.');
+    else if (!isValidEmail(email)) setFieldError('auth-email', 'email-error', 'Please enter a valid email address.');
+    else setFieldError('auth-email', 'email-error', '');
+  });
+
+  $('auth-password').addEventListener('blur', () => {
+    const password = $('auth-password').value;
+    if (!password) setFieldError('auth-password', 'password-error', 'Password is required.');
+    else if (authMode === 'register' && password.length < 8) setFieldError('auth-password', 'password-error', 'Password must be at least 8 characters.');
+    else if (authMode === 'register' && !/[A-Z]/.test(password)) setFieldError('auth-password', 'password-error', 'Password must contain at least one uppercase letter.');
+    else if (authMode === 'register' && !/[0-9]/.test(password)) setFieldError('auth-password', 'password-error', 'Password must contain at least one number.');
+    else setFieldError('auth-password', 'password-error', '');
+  });
+
+  $('auth-confirm-password').addEventListener('blur', () => {
+    if (authMode !== 'register') return;
+    const confirm = $('auth-confirm-password').value;
+    if (!confirm) setFieldError('auth-confirm-password', 'confirm-password-error', 'Please confirm your password.');
+    else if (confirm !== $('auth-password').value) setFieldError('auth-confirm-password', 'confirm-password-error', 'Passwords do not match.');
+    else setFieldError('auth-confirm-password', 'confirm-password-error', '');
+  });
+
+  $('auth-submit-btn').addEventListener('click', async () => {
+    $('auth-error').classList.remove('visible');
+
+    if (!validateAuthForm()) return;
+
+    const email = $('auth-email').value.trim();
+    const password = $('auth-password').value;
+
+    $('auth-submit-btn').textContent = 'Please wait…';
+    $('auth-submit-btn').disabled = true;
+
+    try {
+      const fn = authMode === 'login' ? loginUser : registerUser;
+      const data = await fn({email, password});
+      if (data && data.token) {
+        setToken(data.token);
+        closeLoginModal();
+        updateAuthUI(true, email);
+        await loadPlans();
+        await loadSessions();
+      } else {
+        showNoServerError();
+      }
+    } catch(err) {
+      if (err.message === '__NO_SERVER__') {
+        showNoServerError();
+      } else {
+        showAuthError(err.message || 'Something went wrong. Please try again.');
+      }
+    } finally {
+      $('auth-submit-btn').textContent = authMode === 'login' ? 'Log in' : 'Sign up';
+      $('auth-submit-btn').disabled = false;
+    }
+  });
+
+  // Allow Enter key to submit auth form
+  [$('auth-email'), $('auth-password'), $('auth-confirm-password')].forEach(el => {
+    el?.addEventListener('keydown', e => { if(e.key === 'Enter') $('auth-submit-btn').click(); });
+  });
+
+  function updateAuthUI(loggedIn, email='') {
+    $('hpill-auth-chip').textContent = loggedIn ? (email.split('@')[0] || 'Logged in') : 'Guest';
+    $('btn-open-login').classList.toggle('hidden', loggedIn);
+    $('btn-logout').classList.toggle('hidden', !loggedIn);
+    if(loggedIn && $('profile-email')) { $('profile-email').textContent = email; $('profile-email-ctrl').textContent = email; }
+  }
+
+  function handleLogout() { setToken(null); updateAuthUI(false); plans=[]; sessions=[]; renderAll(); }
+  $('btn-logout').addEventListener('click', handleLogout);
+  $('btn-settings-logout')?.addEventListener('click', handleLogout);
+
+  // ── Data loading ──────────────────────────────────────────────
+  async function loadPlans() {
+    if (!isAuthenticated()) { plans=[]; renderPlans(); return; }
+    try { plans = await fetchPlans() || []; } catch(e) { plans = []; }
+    renderPlans();
+    populateTimerSelect();
+    renderDashboard();
+    renderAnalytics();
+  }
+
+  async function loadSessions() {
+    if (!isAuthenticated()) { sessions=[]; computeSessionTotals(); renderAll(); return; }
+    try { sessions = await fetchSessions() || []; } catch(e) { sessions = []; }
+    computeSessionTotals();
+    renderSessions();
+    renderDashboard();
+    renderAnalytics();
+  }
+
+  function computeSessionTotals() {
+    sessionTotals = {}; todayH = 0; totalH = 0; weekH = 0; mostFocusedId = null;
+    const now = new Date(), todayStr = now.toDateString();
+    const weekAgo = now - 7*24*3600*1000;
+    sessions.forEach(s => {
+      const h = s.durationSeconds / 3600;
+      sessionTotals[s.planId] = (sessionTotals[s.planId]||0) + h;
+      totalH += h;
+      if (new Date(s.loggedAt).toDateString() === todayStr) todayH += h;
+      if (new Date(s.loggedAt) >= weekAgo) weekH += h;
+    });
+    let maxH = 0;
+    Object.entries(sessionTotals).forEach(([id,h]) => { if(h>maxH){maxH=h; mostFocusedId=id;} });
+    $('hpill-today').textContent = `${todayH.toFixed(1)} h today`;
+    $('hpill-total').textContent = `${totalH.toFixed(1)} h total`;
+  }
+
+  // ── Render ────────────────────────────────────────────────────
+  function renderAll() { renderPlans(); renderSessions(); renderDashboard(); renderAnalytics(); }
+
+  function renderDashboard() {
+    $('dash-active-plans').textContent = plans.length;
+    $('dash-today-hours').textContent = `${todayH.toFixed(1)} h`;
+    $('dash-week-hours').textContent = `${weekH.toFixed(1)} h`;
+    $('analytics-total').textContent = `${totalH.toFixed(1)} h`;
+    const mfp = plans.find(p => p.id === mostFocusedId);
+    $('analytics-most-focused').textContent = mfp ? mfp.title : '–';
+
+    // Streak
+    $('dash-streak').textContent = computeStreak();
+
+    // Daily Goal
+    try {
+      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');
+      const goalH = s.dailyGoal || 2;
+      const goalPct = Math.min(100, Math.round((todayH / goalH) * 100));
+      $('dash-goal-ring').style.setProperty('--goal-pct', `${goalPct}%`);
+      $('dash-goal-pct').textContent = `${goalPct}%`;
+      $('dash-goal-text').textContent = `${todayH.toFixed(1)} / ${goalH}h today`;
+    } catch(e) {}
+  }
+
+  function renderPlans() {
+    const list = $('plan-list');
+    if (!plans.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><h3>No plans yet</h3><p>Create your first study plan above</p></div>`;
+      return;
+    }
+    list.innerHTML = plans.map(plan => {
+      const done = sessionTotals[plan.id] || 0;
+      const pct = plan.goalHours ? Math.min(100,(done/plan.goalHours)*100) : 0;
+      const diff = {easy:'🟢 Easy', medium:'🟡 Medium', hard:'🔴 Hard'}[plan.difficulty] || plan.difficulty;
+      return `<div class="plan-card">
+        <div class="plan-card-icon">📚</div>
+        <div class="plan-body">
+          <div class="plan-name">${plan.title}</div>
+          <div class="plan-info">
+            <span class="plan-info-tag">🎯 ${plan.goalHours}h goal</span>
+            <span class="plan-info-tag">${diff}</span>
+            <span class="plan-info-tag">⏱ ${done.toFixed(1)}h done</span>
+          </div>
+          <div class="plan-progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <div class="progress-text"><span>${done.toFixed(1)} / ${plan.goalHours} h</span><span>${Math.round(pct)}%</span></div>
+          </div>
+        </div>
+        <div class="plan-card-actions">
+          <button class="btn btn-ghost btn-sm" onclick="startEditPlan('${plan.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePlanById('${plan.id}')">Delete</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function populateTimerSelect() {
+    const sel = $('timer-plan-select');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Select a plan to focus on</option>';
+    plans.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.id; o.textContent = p.title;
+      sel.appendChild(o);
+    });
+    if (cur) sel.value = cur;
+  }
+
+  function renderSessions() {
+    const list = $('session-list');
+    if (!sessions.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">⏱</div><h3>No sessions yet</h3><p>Start the timer to log your first block</p></div>`;
+      return;
+    }
+    const sorted = [...sessions].sort((a,b) => new Date(b.loggedAt)-new Date(a.loggedAt)).slice(0,15);
+    list.innerHTML = sorted.map(s => {
+      const plan = plans.find(p=>p.id===s.planId);
+      const mins = Math.round(s.durationSeconds/60);
+      const d = new Date(s.loggedAt);
+      const note = s.note ? `<div style="font-size:0.7rem;color:var(--tx-3);font-style:italic;margin-top:2px">📝 ${s.note}</div>` : '';
+      return `<div class="session-row">
+        <div><div class="session-name">${plan?.title||'Unknown plan'}</div><div class="session-time">${d.toLocaleString()}</div>${note}</div>
+        <span class="session-dur">${mins} min</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderAnalytics() {
+    renderHeatmap();
+    renderProgressChart();
+    // Bars
+    const barsEl = $('analytics-bars');
+    if (!plans.length) {
+      barsEl.innerHTML = `<div class="empty-state" style="padding:1.5rem"><p>No data yet — complete some sessions!</p></div>`;
+    } else {
+      const maxH = Math.max(...plans.map(p => sessionTotals[p.id]||0), 0.001);
+      barsEl.innerHTML = plans.map(p => {
+        const h = sessionTotals[p.id] || 0;
+        const w = (h/maxH*100).toFixed(1);
+        return `<div class="bar-row">
+          <div class="bar-label" title="${p.title}">${p.title}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${w}%"></div></div>
+          <div class="bar-val">${h.toFixed(1)}h</div>
+        </div>`;
+      }).join('');
+    }
+
+    // Table
+    const tbody = $('analytics-tbody');
+    if (!plans.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="color:var(--tx-3);text-align:center;padding:1.5rem">No sessions logged yet</td></tr>`;
+    } else {
+      tbody.innerHTML = plans.map(p => {
+        const done = sessionTotals[p.id] || 0;
+        const pct = p.goalHours ? Math.min(100,(done/p.goalHours)*100) : 0;
+        return `<tr>
+          <td>${p.title}</td>
+          <td>${p.goalHours}h</td>
+          <td>${done.toFixed(1)}h</td>
+          <td><span class="pct-badge">${Math.round(pct)}%</span></td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  // ── Plan form ─────────────────────────────────────────────────
+  $('plan-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData($('plan-form'));
+    const payload = { title: fd.get('title').trim(), goalHours: Number(fd.get('goalHours')), difficulty: fd.get('difficulty') };
+    if (!payload.title || !payload.goalHours) { showToast('Please fill in title and goal hours.', 'warning'); return; }
+    try {
+      if (editingPlanId) { await updatePlan(editingPlanId, payload); editingPlanId = null; }
+      else { await createPlan(payload); }
+      $('plan-form').reset();
+      await loadPlans();
+    } catch(err) { showToast(err.message, 'error'); }
+  });
+
+  window.startEditPlan = (id) => {
+    const p = plans.find(x=>x.id===id); if(!p) return;
+    editingPlanId = id;
+    $('plan-title').value = p.title;
+    $('plan-goal-hours').value = p.goalHours;
+    $('plan-difficulty').value = p.difficulty;
+    setView('plans');
+    $('plan-title').focus();
+  };
+
+  window.deletePlanById = async (id) => {
+    if (!confirm('Delete this study plan?')) return;
+    try { await deletePlan(id); await loadPlans(); await loadSessions(); } catch(err) { showToast(err.message, 'error'); }
+  };
+
+  window.addCourseAsPlan = async (title, goalHours, difficulty) => {
+    try {
+      await createPlan({title, goalHours, difficulty});
+      await loadPlans();
+      setView('plans');
+    } catch(err) { showToast('Log in first to add plans: ' + err.message, 'error'); }
+  };
+
+  // ── AI Suggest ────────────────────────────────────────────────
+  $('btn-ai-suggest').addEventListener('click', async () => {
+    const topic = $('plan-title').value.trim();
+    if (!topic) { showToast('Enter a topic first.', 'warning'); return; }
+    $('btn-ai-suggest').textContent = '⏳ Thinking…';
+    try {
+      const res = await aiSuggestGoal({topic, difficulty: $('plan-difficulty').value});
+      if (res?.hours) $('plan-goal-hours').value = res.hours;
+    } catch(e) { showToast('AI suggest failed: ' + e.message, 'error'); }
+    finally { $('btn-ai-suggest').textContent = '⚙ AI Suggest Goal'; }
+  });
+
+  // ── Plan Generator ────────────────────────────────────────────
+  $('btn-generate-plan').addEventListener('click', async () => {
+    const topic = $('gen-topic').value.trim();
+    if (!topic) { showToast('Enter a topic first.', 'warning'); return; }
+    $('btn-generate-plan').textContent = '✨ Generating…';
+    $('generated-plan').innerHTML = `<div class="gen-placeholder"><div class="big-icon" style="animation:spin 1s linear infinite">⏳</div><p>Generating your plan…</p></div>`;
+    try {
+      const res = await aiGeneratePlan({ topic, difficulty: $('gen-difficulty').value, sessionsPerWeek: $('gen-sessions').value, goal: $('gen-goal').value });
+      const text = res?.plan || res?.content || JSON.stringify(res, null, 2);
+      $('generated-plan').innerHTML = `<div class="gen-result">${text}</div><button class="btn btn-ghost btn-sm mt-2" onclick="setView('plans')">→ Go to Plans to add this</button>`;
+    } catch(e) {
+      $('generated-plan').innerHTML = `<div class="gen-placeholder"><div class="big-icon">⚠️</div><p style="color:#fca5a5">Generation failed: ${e.message}</p><p style="font-size:0.74rem">Make sure the backend is running</p></div>`;
+    } finally { $('btn-generate-plan').textContent = '✨ Generate Plan'; }
+  });
+
+  // ── AI Chat (Botpress embedded iframe) ────────────────────────
+  // No custom JS needed — Botpress webchat runs inside the iframe.
+
+  // ── Timer ─────────────────────────────────────────────────────
+  function updateTimerDisplay() {
+    const m = Math.floor(timerSeconds/60), s = timerSeconds%60;
+    $('timer-value').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    const progress = $('timer-progress');
+    if (progress) {
+      const circ = 402;
+      const offset = circ - (timerSeconds / timerTotal) * circ;
+      progress.style.strokeDashoffset = offset;
+    }
+  }
+
+  $('timer-start').addEventListener('click', () => {
+    if (timerRunning) return;
+    timerRunning = true;
+    timerInterval = setInterval(async () => {
+      if (timerSeconds <= 0) {
+        clearInterval(timerInterval); timerRunning = false;
+        const planId = $('timer-plan-select').value;
+        if (planId && isAuthenticated()) {
+          try {
+            const note = prompt('Add a note for this session (optional):') || '';
+            await createSession({planId, durationSeconds: timerTotal, note});
+            await loadSessions();
+            showToast('Session logged!', 'success');
+            showBreakReminder();
+          } catch(e){ showToast('Failed to log session', 'error'); }
+        }
+        timerSeconds = timerTotal; updateTimerDisplay();
+        return;
+      }
+      timerSeconds--; updateTimerDisplay();
+    }, 1000);
+  });
+
+  $('timer-pause').addEventListener('click', () => { clearInterval(timerInterval); timerRunning = false; });
+  $('timer-reset').addEventListener('click', () => { clearInterval(timerInterval); timerRunning = false; timerSeconds = timerTotal; updateTimerDisplay(); });
+
+  document.querySelectorAll('.preset-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.preset-chip').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      clearInterval(timerInterval); timerRunning = false;
+      timerTotal = timerSeconds = Number(btn.dataset.minutes) * 60;
+      updateTimerDisplay();
+    });
+  });
+
+  // ── Settings toggles ──────────────────────────────────────────
+  document.querySelectorAll('.toggle').forEach(t => {
+    t.addEventListener('click', () => t.classList.toggle('on'));
+  });
+
+  $('btn-export').addEventListener('click', () => {
+    const data = JSON.stringify({plans, sessions}, null, 2);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data],{type:'application/json'}));
+    a.download = 'ai-scholar-export.json'; a.click();
+  });
+
+  $('btn-clear-data').addEventListener('click', () => {
+    if (confirm('Clear all local data? This cannot be undone.')) { localStorage.clear(); location.reload(); }
+  });
+
+  // ── Init ──────────────────────────────────────────────────────
+  loadSettings();
+  updateTimerDisplay();
+  if (isAuthenticated()) {
+    updateAuthUI(true);
+    loadPlans();
+    loadSessions();
+  } else {
+    updateAuthUI(false);
+    // Show login modal briefly after load for unauthenticated users
+    setTimeout(() => openLoginModal('login'), 600);
+  }
+</script>
+
+
+
+
+</body>
+</html>
